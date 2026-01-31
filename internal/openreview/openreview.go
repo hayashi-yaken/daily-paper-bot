@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -54,14 +55,6 @@ type ValueField[T any] struct {
 }
 
 // GetNotes は指定されたVenueの論文リストを取得します。
-import (
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"net/url"
-	"time"
-)
-
 func (c *Client) GetNotes(venue string) ([]Note, error) {
 	// APIエンドポイントを構築
 	endpoint := fmt.Sprintf("%s/notes?invitation=%s/-/Submission", c.BaseURL, url.QueryEscape(venue))
