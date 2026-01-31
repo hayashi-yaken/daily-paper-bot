@@ -54,11 +54,19 @@ type ValueField[T any] struct {
 }
 
 // GetNotes は指定されたVenueの論文リストを取得します。
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"time"
+)
+
 func (c *Client) GetNotes(venue string) ([]Note, error) {
 	// APIエンドポイントを構築
-	url := fmt.Sprintf("%s/notes?invitation=%s/-/Submission", c.BaseURL, venue)
+	endpoint := fmt.Sprintf("%s/notes?invitation=%s/-/Submission", c.BaseURL, url.QueryEscape(venue))
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
