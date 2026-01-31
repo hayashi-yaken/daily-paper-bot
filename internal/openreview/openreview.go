@@ -11,13 +11,15 @@ import (
 type Client struct {
 	httpClient *http.Client
 	BaseURL    string
+	UserAgent  string
 }
 
 // NewClient は新しいOpenReviewクライアントを生成します。
-func NewClient() *Client {
+func NewClient(userAgent string) *Client {
 	return &Client{
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 		BaseURL:    "https://api2.openreview.net",
+		UserAgent:  userAgent,
 	}
 }
 
@@ -60,7 +62,7 @@ func (c *Client) GetNotes(venue string) ([]Note, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Set("User-Agent", "daily-paper-bot/1.0 (https://github.com/hayashi-yaken/daily-paper-bot)")
+	req.Header.Set("User-Agent", c.UserAgent)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

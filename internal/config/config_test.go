@@ -36,6 +36,11 @@ func TestLoad(t *testing.T) {
 		if cfg.AbstractMaxChars != 1200 {
 			t.Errorf("unexpected abstract_max_chars: got %v, want %v", cfg.AbstractMaxChars, 1200)
 		}
+		// Check default user agent
+		defaultUserAgent := "daily-paper-bot/1.0 (+https://github.com/hayashi-yaken/daily-paper-bot)"
+		if cfg.CustomUserAgent != defaultUserAgent {
+			t.Errorf("unexpected user_agent: got %v, want %v", cfg.CustomUserAgent, defaultUserAgent)
+		}
 	})
 
 	t.Run("success with discord and custom defaults", func(t *testing.T) {
@@ -45,6 +50,7 @@ func TestLoad(t *testing.T) {
 		t.Setenv("DISCORD_WEBHOOK_URL", "http://discord.example.com")
 		t.Setenv("SELECT_STRATEGY", "latest")
 		t.Setenv("ABSTRACT_MAX_CHARS", "500")
+		t.Setenv("CUSTOM_USER_AGENT", "my-custom-agent/2.0")
 
 		cfg, err := Load()
 		if err != nil {
@@ -58,6 +64,9 @@ func TestLoad(t *testing.T) {
 		}
 		if cfg.AbstractMaxChars != 500 {
 			t.Errorf("unexpected abstract_max_chars: got %v, want %v", cfg.AbstractMaxChars, 500)
+		}
+		if cfg.CustomUserAgent != "my-custom-agent/2.0" {
+			t.Errorf("unexpected user_agent: got %v, want %v", cfg.CustomUserAgent, "my-custom-agent/2.0")
 		}
 	})
 

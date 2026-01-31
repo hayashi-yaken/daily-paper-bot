@@ -15,7 +15,7 @@ func TestGetNotes_Integration(t *testing.T) {
 	}
 
 	t.Run("fetch from live server", func(t *testing.T) {
-		client := NewClient()
+		client := NewClient("daily-paper-bot-integration-test/1.0")
 
 		// ICLR 2024 のような、確実にデータが存在する過去のカンファレンスを対象とする
 		venue := "ICLR.cc/2024/Conference"
