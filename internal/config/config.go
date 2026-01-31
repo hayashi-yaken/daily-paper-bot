@@ -26,6 +26,9 @@ type Config struct {
 	SelectStrategy   string
 	AbstractMaxChars int
 	DryRun           bool
+
+	// Misc
+	CustomUserAgent string
 }
 
 // Load は環境変数から設定を読み込み、検証します。
@@ -94,6 +97,11 @@ func Load() (*Config, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse DRY_RUN: %w", err)
 		}
+	}
+
+	cfg.CustomUserAgent = os.Getenv("CUSTOM_USER_AGENT")
+	if cfg.CustomUserAgent == "" {
+		cfg.CustomUserAgent = "daily-paper-bot/1.0 (+https://github.com/hayashi-yaken/daily-paper-bot)"
 	}
 
 	return cfg, nil
