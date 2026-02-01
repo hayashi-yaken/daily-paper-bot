@@ -14,6 +14,9 @@ type JSONStorage struct {
 	path string
 }
 
+// NewJSONStorage creates a JSONStorage that uses the absolute path of storagePath and
+// loads existing posted data from that file. It returns the initialized storage or an
+// error if resolving the absolute path or loading the data fails.
 func NewJSONStorage() (*JSONStorage, error) {
 	absPath, err := filepath.Abs(storagePath)
 	if err != nil {
