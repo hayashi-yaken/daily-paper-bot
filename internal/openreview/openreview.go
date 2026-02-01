@@ -82,3 +82,13 @@ func (c *Client) GetNotes(venue string) ([]Note, error) {
 
 	return apiResponse.Notes, nil
 }
+
+// GetID はPaperインターフェースを満たすためにNoteのIDを返します。
+func (n *Note) GetID() string {
+	return n.ID
+}
+
+// GetTitle はPaperインターフェースを満たすためにNoteのタイトルを返します。
+func (n *Note) GetTitle() string {
+	return n.Content.Title.Value
+}
