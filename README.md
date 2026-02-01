@@ -50,7 +50,7 @@ cp .env.sample .env
 ### ローカルでの実行
 
 ローカルでBotを一度だけ実行するには、以下のコマンドを使用します。
-`.env` ファイルが自動的に読み込まれます（`go-dotenv` を利用）。
+`.env` ファイルが自動的に読み込まれます（`godotenv` を利用）。
 
 ```bash
 go run ./cmd/dailybot
