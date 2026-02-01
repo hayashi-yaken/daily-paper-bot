@@ -7,6 +7,7 @@ import (
 )
 
 var ErrNoCandidates = errors.New("no candidates to select from")
+var ErrNilIsPosted = errors.New("isPosted callback is nil")
 
 // RandomSelector はランダムに論文を選定するセレクターです。
 type RandomSelector struct {
@@ -26,6 +27,9 @@ func NewRandomSelector(isPosted func(paperID string) bool) *RandomSelector {
 
 // Select は論文リストから未投稿のものをフィルタリングし、ランダムに1本を選定します。
 func (s *RandomSelector) Select(papers []Paper) (Paper, error) {
+	if s.isPosted == nil {
+		return nil, ErrNilIsPosted
+	}
 	var candidates []Paper
 
 	// 投稿済みを除外し、必須項目をチェックします。
