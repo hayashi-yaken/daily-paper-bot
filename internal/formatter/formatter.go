@@ -7,8 +7,61 @@ import (
 	"github.com/hayashi-yaken/daily-paper-bot/internal/openreview"
 )
 
-// FormatPaper は論文情報から投稿用のメッセージ文字列を生成します。
-func FormatPaper(paper *openreview.Note, venue string, year int, abstractMaxChars int) string {
+// Formatter は論文情報を文字列に整形するインターフェースです。
+type Formatter interface {
+	Format(paper *openreview.Note, venue string, year int, abstractMaxChars int) string
+}
+
+// --- Discord Formatter (Standard Markdown) ---
+
+type discordFormatter struct{}
+
+// NewDiscordFormatter はDiscord用のFormatterを生成します。
+func NewDiscordFormatter() Formatter {
+	return &discordFormatter{}
+}
+
+func (f *discordFormatter) Format(paper *openreview.Note, venue string, year int, abstractMaxChars int) string {
+	// ヘッダー部分を生成
+	shortName := getShortVenueName(venue)
+	venueLink := fmt.Sprintf("https://openreview.net/group?id=%s", venue)
+	headerText := fmt.Sprintf("📄 今日の論文 (%s %d)", shortName, year)
+	header := fmt.Sprintf("[%s](%s)", headerText, venueLink)
+
+	return formatMessage(paper, header, abstractMaxChars)
+}
+
+// --- Slack Formatter (Slack Mrkdwn) ---
+
+type slackFormatter struct{}
+
+// NewSlackFormatter はSlack用のFormatterを生成します。
+func NewSlackFormatter() Formatter {
+	return &slackFormatter{}
+}
+
+func (f *slackFormatter) Format(paper *openreview.Note, venue string, year int, abstractMaxChars int) string {
+	// ヘッダー部分を生成
+	shortName := getShortVenueName(venue)
+	venueLink := fmt.Sprintf("https://openreview.net/group?id=%s", venue)
+	headerText := fmt.Sprintf("📄 今日の論文 (%s %d)", shortName, year)
+	header := fmt.Sprintf("<%s|%s>", venueLink, headerText) // Slack形式のリンク
+
+	return formatMessage(paper, header, abstractMaxChars)
+}
+
+// --- Helper Functions ---
+
+// getShortVenueName は venue のIDから短い名前を生成します (例: "ICLR.cc/2025/Conference" -> "ICLR")
+func getShortVenueName(venue string) string {
+	if parts := strings.Split(venue, "."); len(parts) > 0 {
+		return parts[0]
+	}
+	return venue
+}
+
+// formatMessage は共通のメッセージ本文を組み立てます。
+func formatMessage(paper *openreview.Note, header string, abstractMaxChars int) string {
 	// Abstractを指定文字数で切り詰める
 	abstract := paper.Content.Abstract.Value
 	if abstractMaxChars > 0 && len([]rune(abstract)) > abstractMaxChars {
@@ -18,17 +71,23 @@ func FormatPaper(paper *openreview.Note, venue string, year int, abstractMaxChar
 	// 著者リストをカンマ区切りの文字列にする
 	authors := strings.Join(paper.Content.Authors.Value, ", ")
 
-	// PDFのURLを取得する。なければOpenReviewのフォーラムURLを生成する。
-	link := paper.Content.PDF.Value
-	if link == "" {
+	// PDFのリンクを生成する
+	var link string
+	pdfPath := paper.Content.PDF.Value
+	if pdfPath != "" {
+		if !strings.HasPrefix(pdfPath, "http") {
+			link = "https://openreview.net" + pdfPath
+		} else {
+			link = pdfPath
+		}
+	} else {
 		link = fmt.Sprintf("https://openreview.net/forum?id=%s", paper.ID)
 	}
 
 	// メッセージを組み立てる
 	return fmt.Sprintf(
-		"📄 今日の論文 (%s %d)\n\n*Title*: %s\n*Authors*: %s\n\n*Abstract*:\n%s\n\n*Link*:\n%s\n\nID: `%s`",
-		venue,
-		year,
+		"%s\n\n*Title*: %s\n*Authors*: %s\n\n*Abstract*:\n%s\n\n*Link*:\n%s\n\nID: `%s`",
+		header,
 		paper.Content.Title.Value,
 		authors,
 		abstract,
