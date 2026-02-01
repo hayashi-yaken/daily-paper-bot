@@ -34,6 +34,9 @@ func (s *RandomSelector) Select(papers []Paper) (Paper, error) {
 
 	// 投稿済みを除外し、必須項目をチェックします。
 	for _, p := range papers {
+		if p == nil {
+			continue
+		}
 		if p.GetID() == "" || p.GetTitle() == "" {
 			continue // データ不整合はスキップ
 		}
