@@ -1,0 +1,47 @@
+name: Daily Paper Bot
+
+on:
+  workflow_dispatch: # 手動実行を許可
+  schedule:
+    - cron: "0 0 * * *" # 毎日 00:00 UTC (JST 09:00) に実行
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # posted.json をコミットするためにリポジトリへの書き込み権限が必要
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22" # go.mod に合わせたバージョン
+
+      - name: Run Bot
+        env:
+          # 公開可能な設定はここに記述するか、リポジトリの Variables を使用します
+          OR_VENUE: "ICLR.cc/2025/Conference"
+          OR_YEAR: "2025"
+          TARGET_PLATFORM: "slack"
+          ABSTRACT_MAX_CHARS: "1200"
+          DRY_RUN: "false"
+          
+          # --- Secrets ---
+          # 以下の値はリポジトリの「Settings > Secrets and variables > Actions」で設定してください
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          CUSTOM_USER_AGENT: ${{ secrets.CUSTOM_USER_AGENT }} # 任意
+        run: go run ./cmd/dailybot
+
+      - name: Commit and push if changed
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(bot): Update posted papers"
+          file_pattern: "data/posted.json"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
+          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
