@@ -89,9 +89,6 @@ func run() error {
 		return fmt.Errorf("selected paper is not of type *openreview.Note")
 	}
 
-	// デバッグ用に取得した生のContent情報をログに出力
-	log.Printf("[DEBUG] Raw content from API: %+v", selectedNote.Content)
-
 	// 5. 投稿メッセージを生成
 	message := paperFormatter.Format(selectedNote, cfg.Venue, cfg.Year, cfg.AbstractMaxChars)
 
