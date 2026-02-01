@@ -8,7 +8,7 @@ import (
 )
 
 // FormatPaper は論文情報から投稿用のメッセージ文字列を生成します。
-func FormatPaper(paper openreview.Note, venue string, year int, abstractMaxChars int) string {
+func FormatPaper(paper *openreview.Note, venue string, year int, abstractMaxChars int) string {
 	// Abstractを指定文字数で切り詰める
 	abstract := paper.Content.Abstract.Value
 	if abstractMaxChars > 0 && len([]rune(abstract)) > abstractMaxChars {

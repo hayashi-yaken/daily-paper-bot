@@ -9,7 +9,7 @@ import (
 )
 
 func TestFormatPaper(t *testing.T) {
-	paper := openreview.Note{
+	paper := &openreview.Note{
 		ID: "testID123",
 		Content: openreview.NoteContent{
 			Title:    openreview.ValueField[string]{Value: "Test Title"},
@@ -43,9 +43,9 @@ func TestFormatPaper(t *testing.T) {
 	})
 
 	t.Run("format with no pdf link", func(t *testing.T) {
-		paperNoPDF := paper
+		paperNoPDF := *paper // ポインタをコピー
 		paperNoPDF.Content.PDF = openreview.ValueField[string]{Value: ""}
-		formatted := FormatPaper(paperNoPDF, venue, year, 1000)
+		formatted := FormatPaper(&paperNoPDF, venue, year, 1000)
 		expectedLink := fmt.Sprintf("https://openreview.net/forum?id=%s", paperNoPDF.ID)
 		if !strings.Contains(formatted, expectedLink) {
 			t.Errorf("expected link to be forum URL, but it was not. Got: %s", formatted)
