@@ -56,9 +56,9 @@ func TestMain(m *testing.M) {
 	}
 
 	// --- デバッグ用に読み込まれた値を出力 ---
-	log.Printf("[DEBUG] SLACK_BOT_TOKEN: '%s'", os.Getenv("SLACK_BOT_TOKEN"))
+	log.Printf("[DEBUG] SLACK_BOT_TOKEN set: %t", os.Getenv("SLACK_BOT_TOKEN") != "")
 	log.Printf("[DEBUG] SLACK_CHANNEL_ID: '%s'", os.Getenv("SLACK_CHANNEL_ID"))
-	log.Printf("[DEBUG] DISCORD_WEBHOOK_URL: '%s'", os.Getenv("DISCORD_WEBHOOK_URL"))
+	log.Printf("[DEBUG] DISCORD_WEBHOOK_URL set: %t", os.Getenv("DISCORD_WEBHOOK_URL") != "")
 	log.Println("--------------------------------------")
 
 	// パッケージ内のテストを実行
