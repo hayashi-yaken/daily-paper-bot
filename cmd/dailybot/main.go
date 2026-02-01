@@ -42,14 +42,18 @@ func run() error {
 	paperSelector := selector.NewRandomSelector(jsonStorage.IsPosted)
 
 	var paperNotifier notifier.Notifier
+	var paperFormatter formatter.Formatter
 	switch cfg.TargetPlatform {
 	case "slack":
 		paperNotifier = notifier.NewSlackNotifier(cfg.SlackBotToken, cfg.SlackChannelID)
-		log.Println("INFO: Notifier set to Slack.")
+		paperFormatter = formatter.NewSlackFormatter()
+		log.Println("INFO: Target platform set to Slack.")
 	case "discord":
 		paperNotifier = notifier.NewDiscordNotifier(cfg.DiscordWebhookURL)
-		log.Println("INFO: Notifier set to Discord.")
+		paperFormatter = formatter.NewDiscordFormatter()
+		log.Println("INFO: Target platform set to Discord.")
 	default:
+		// config.Loadで検証済みだが念のため
 		return fmt.Errorf("invalid target platform: %s", cfg.TargetPlatform)
 	}
 
@@ -79,13 +83,17 @@ func run() error {
 	}
 	log.Printf("INFO: Selected paper: %s (ID: %s)", selectedPaper.GetTitle(), selectedPaper.GetID())
 
-	// 5. 投稿メッセージを生成
 	// selector.Paper を *openreview.Note に型アサーション
 	selectedNote, ok := selectedPaper.(*openreview.Note)
 	if !ok {
 		return fmt.Errorf("selected paper is not of type *openreview.Note")
 	}
-	message := formatter.FormatPaper(selectedNote, cfg.Venue, cfg.Year, cfg.AbstractMaxChars)
+
+	// デバッグ用に取得した生のContent情報をログに出力
+	log.Printf("[DEBUG] Raw content from API: %+v", selectedNote.Content)
+
+	// 5. 投稿メッセージを生成
+	message := paperFormatter.Format(selectedNote, cfg.Venue, cfg.Year, cfg.AbstractMaxChars)
 
 	// 6. DryRun または 投稿 & 記録
 	if cfg.DryRun {

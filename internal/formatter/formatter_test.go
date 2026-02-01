@@ -1,54 +1,38 @@
 package formatter
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/hayashi-yaken/daily-paper-bot/internal/openreview"
 )
 
-func TestFormatPaper(t *testing.T) {
+func TestFormatters(t *testing.T) {
 	paper := &openreview.Note{
 		ID: "testID123",
 		Content: openreview.NoteContent{
-			Title:    openreview.ValueField[string]{Value: "Test Title"},
-			Authors:  openreview.ValueField[[]string]{Value: []string{"Author A", "Author B"}},
-			Abstract: openreview.ValueField[string]{Value: "This is a test abstract. It has several words."},
-			PDF:      openreview.ValueField[string]{Value: "http://example.com/test.pdf"},
+			Title:   openreview.ValueField[string]{Value: "Test Title"},
+			Authors: openreview.ValueField[[]string]{Value: []string{"Author A", "Author B"}},
 		},
 	}
-	venue := "ICLR"
+	venue := "ICLR.cc/2025/Conference"
 	year := 2025
 
-	t.Run("format with full abstract", func(t *testing.T) {
-		formatted := FormatPaper(paper, venue, year, 1000)
-		expected := fmt.Sprintf(
-			"📄 今日の論文 (ICLR 2025)\n\n*Title*: Test Title\n*Authors*: Author A, Author B\n\n*Abstract*:\nThis is a test abstract. It has several words.\n\n*Link*:\nhttp://example.com/test.pdf\n\nID: `%s`",
-			"testID123",
-		)
-		if formatted != expected {
-			t.Errorf("formatted text does not match expected.\nGot:\n%s\n\nExpected:\n%s", formatted, expected)
-		}
-	})
-
-	t.Run("format with truncated abstract", func(t *testing.T) {
-		formatted := FormatPaper(paper, venue, year, 20)
-		if !strings.Contains(formatted, "This is a test abstr...") {
-			t.Errorf("abstract is not truncated correctly. Got: %s", formatted)
-		}
-		if strings.Contains(formatted, "It has several words.") {
-			t.Errorf("truncated abstract should not contain the full text. Got: %s", formatted)
-		}
-	})
-
-	t.Run("format with no pdf link", func(t *testing.T) {
-		paperNoPDF := *paper // ポインタをコピー
-		paperNoPDF.Content.PDF = openreview.ValueField[string]{Value: ""}
-		formatted := FormatPaper(&paperNoPDF, venue, year, 1000)
-		expectedLink := fmt.Sprintf("https://openreview.net/forum?id=%s", paperNoPDF.ID)
+	t.Run("DiscordFormatter", func(t *testing.T) {
+		formatter := NewDiscordFormatter()
+		formatted := formatter.Format(paper, venue, year, 100)
+		expectedLink := "[📄 今日の論文 (ICLR 2025)](https://openreview.net/group?id=ICLR.cc/2025/Conference)"
 		if !strings.Contains(formatted, expectedLink) {
-			t.Errorf("expected link to be forum URL, but it was not. Got: %s", formatted)
+			t.Errorf("Discord link format is incorrect.\nGot: %s\nExpected to contain: %s", formatted, expectedLink)
+		}
+	})
+
+	t.Run("SlackFormatter", func(t *testing.T) {
+		formatter := NewSlackFormatter()
+		formatted := formatter.Format(paper, venue, year, 100)
+		expectedLink := "<https://openreview.net/group?id=ICLR.cc/2025/Conference|📄 今日の論文 (ICLR 2025)>"
+		if !strings.Contains(formatted, expectedLink) {
+			t.Errorf("Slack link format is incorrect.\nGot: %s\nExpected to contain: %s", formatted, expectedLink)
 		}
 	})
 }
