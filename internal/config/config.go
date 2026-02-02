@@ -1,16 +1,24 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
 )
 
+// VenueConfig は一つの学会に関する設定を保持します。
+type VenueConfig struct {
+	Name     string `json:"name"`     // 表示名 (例: "ICLR")
+	Venue    string `json:"venue"`    // API用Venue ID
+	Year     int    `json:"year"`     // 年
+	VenueURL string `json:"venueURL"` // ブラウザ表示用URL
+}
+
 // Config はアプリケーション全体の設定を保持します。
 type Config struct {
 	// OpenReview
-	Venue string
-	Year  int
+	Venues []VenueConfig
 
 	// Target Platform
 	TargetPlatform string
@@ -34,26 +42,26 @@ type Config struct {
 // Load は環境変数から設定を読み込み、検証します。
 func Load() (*Config, error) {
 	cfg := &Config{}
+	var err error
 
-	// 文字列型の必須項目
-	cfg.Venue = os.Getenv("OR_VENUE")
-	if cfg.Venue == "" {
-		return nil, fmt.Errorf("environment variable OR_VENUE is required")
+	// --- 必須項目 ---
+
+	// OR_VENUES_JSONから学会リストを読み込む
+	venuesJSON := os.Getenv("OR_VENUES_JSON")
+	if venuesJSON == "" {
+		return nil, fmt.Errorf("environment variable OR_VENUES_JSON is required")
 	}
+	if err := json.Unmarshal([]byte(venuesJSON), &cfg.Venues); err != nil {
+		return nil, fmt.Errorf("failed to parse OR_VENUES_JSON: %w", err)
+	}
+	if len(cfg.Venues) == 0 {
+		return nil, fmt.Errorf("no venues found in OR_VENUES_JSON")
+	}
+
+	// TargetPlatform
 	cfg.TargetPlatform = os.Getenv("TARGET_PLATFORM")
 	if cfg.TargetPlatform == "" {
 		return nil, fmt.Errorf("environment variable TARGET_PLATFORM is required")
-	}
-
-	// 整数型の必須項目
-	yearStr := os.Getenv("OR_YEAR")
-	if yearStr == "" {
-		return nil, fmt.Errorf("environment variable OR_YEAR is required")
-	}
-	var err error
-	cfg.Year, err = strconv.Atoi(yearStr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse OR_YEAR: %w", err)
 	}
 
 	// プラットフォームに応じた必須項目
@@ -73,7 +81,8 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid TARGET_PLATFORM: %s. must be 'slack' or 'discord'", cfg.TargetPlatform)
 	}
 
-	// 任意項目（デフォルト値あり）
+	// --- 任意項目（デフォルト値あり） ---
+
 	cfg.SelectStrategy = os.Getenv("SELECT_STRATEGY")
 	if cfg.SelectStrategy == "" {
 		cfg.SelectStrategy = "random"

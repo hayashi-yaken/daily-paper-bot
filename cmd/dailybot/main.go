@@ -57,9 +57,12 @@ func run() error {
 		return fmt.Errorf("invalid target platform: %s", cfg.TargetPlatform)
 	}
 
+	// TODO(DPB-011): この部分は複数学会対応で修正される
+	tempVenue := cfg.Venues[0]
+
 	// 3. OpenReviewから論文一覧を取得
-	log.Printf("INFO: Fetching papers from OpenReview (Venue: %s)...", cfg.Venue)
-	notes, err := orClient.GetNotes(cfg.Venue)
+	log.Printf("INFO: Fetching papers from OpenReview (Venue: %s)...", tempVenue.Venue)
+	notes, err := orClient.GetNotes(tempVenue.Venue)
 	if err != nil {
 		return fmt.Errorf("failed to get notes from openreview: %w", err)
 	}
@@ -90,7 +93,7 @@ func run() error {
 	}
 
 	// 5. 投稿メッセージを生成
-	message := paperFormatter.Format(selectedNote, cfg.Venue, cfg.Year, cfg.AbstractMaxChars)
+	message := paperFormatter.Format(selectedNote, tempVenue.Name, tempVenue.Year, cfg.AbstractMaxChars)
 
 	// 6. DryRun または 投稿 & 記録
 	if cfg.DryRun {
@@ -106,7 +109,7 @@ func run() error {
 	log.Println("INFO: Post successful.")
 
 	log.Println("INFO: Saving posted record...")
-	jsonStorage.Add(selectedPaper.GetID(), cfg.Venue)
+	jsonStorage.Add(selectedPaper.GetID(), tempVenue.Venue)
 	if err := jsonStorage.Save(); err != nil {
 		return fmt.Errorf("failed to save posted record: %w", err)
 	}
