@@ -91,9 +91,7 @@ func run() error {
 	if !ok {
 		return fmt.Errorf("selected paper is not of type *openreview.Note")
 	}
-
-	// 5. 投稿メッセージを生成
-	message := paperFormatter.Format(selectedNote, tempVenue.Name, tempVenue.Year, cfg.AbstractMaxChars)
+	message := paperFormatter.Format(selectedNote, tempVenue, cfg.AbstractMaxChars)
 
 	// 6. DryRun または 投稿 & 記録
 	if cfg.DryRun {

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hayashi-yaken/daily-paper-bot/internal/config"
 	"github.com/hayashi-yaken/daily-paper-bot/internal/openreview"
 )
 
@@ -15,12 +16,15 @@ func TestFormatters(t *testing.T) {
 			Authors: openreview.ValueField[[]string]{Value: []string{"Author A", "Author B"}},
 		},
 	}
-	venue := "ICLR.cc/2025/Conference"
-	year := 2025
+	venue := config.VenueConfig{
+		Name:  "ICLR",
+		Venue: "ICLR.cc/2025/Conference",
+		Year:  2025,
+	}
 
 	t.Run("DiscordFormatter", func(t *testing.T) {
 		formatter := NewDiscordFormatter()
-		formatted := formatter.Format(paper, venue, year, 100)
+		formatted := formatter.Format(paper, venue, 100)
 		expectedLink := "[📄 今日の論文 (ICLR 2025)](https://openreview.net/group?id=ICLR.cc/2025/Conference)"
 		if !strings.Contains(formatted, expectedLink) {
 			t.Errorf("Discord link format is incorrect.\nGot: %s\nExpected to contain: %s", formatted, expectedLink)
@@ -29,7 +33,7 @@ func TestFormatters(t *testing.T) {
 
 	t.Run("SlackFormatter", func(t *testing.T) {
 		formatter := NewSlackFormatter()
-		formatted := formatter.Format(paper, venue, year, 100)
+		formatted := formatter.Format(paper, venue, 100)
 		expectedLink := "<https://openreview.net/group?id=ICLR.cc/2025/Conference|📄 今日の論文 (ICLR 2025)>"
 		if !strings.Contains(formatted, expectedLink) {
 			t.Errorf("Slack link format is incorrect.\nGot: %s\nExpected to contain: %s", formatted, expectedLink)
