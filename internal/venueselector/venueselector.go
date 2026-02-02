@@ -29,8 +29,15 @@ func NewRandomVenueSelector() VenueSelector {
 
 // Select は学会のリストからランダムに1つを選びます。
 func (s *RandomVenueSelector) Select(venues []config.VenueConfig) (config.VenueConfig, error) {
+	if s == nil {
+		return config.VenueConfig{}, errors.New("selector is nil")
+	}
 	if len(venues) == 0 {
 		return config.VenueConfig{}, ErrNoVenues
+	}
+	if s.rand == nil {
+		// randが初期化されていない場合（コンストラクタ以外で生成された場合）のフォールバック
+		s.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	}
 
 	selectedIndex := s.rand.Intn(len(venues))

@@ -39,4 +39,19 @@ func TestRandomVenueSelector_Select(t *testing.T) {
 			t.Errorf("expected ErrNoVenues, but got %v", err)
 		}
 	})
+
+	t.Run("does not panic if rand is not initialized", func(t *testing.T) {
+		// コンストラクタを使わずに直接インスタンス化
+		selector := &RandomVenueSelector{}
+		
+		// この呼び出しでpanicが起きないことを確認する
+		// defer + recover でpanicを検知することもできるが、ここでは正常に値が返るかで判断
+		selected, err := selector.Select(venues)
+		if err != nil {
+			t.Fatalf("Select() returned an error: %v", err)
+		}
+		if selected.Name == "" {
+			t.Error("selected venue should not be empty")
+		}
+	})
 }
