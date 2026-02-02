@@ -47,7 +47,7 @@ func Load() (*Config, error) {
 
 	// --- ファイルからの設定 ---
 
-	// config/venues.json から学会リストを読み込む
+	// assets/venues.json から学会リストを読み込む
 	bytes, err := os.ReadFile(venuesConfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read venues config file at %s: %w", venuesConfigPath, err)
