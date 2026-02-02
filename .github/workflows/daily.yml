@@ -22,9 +22,11 @@ jobs:
 
       - name: Run Bot
         env:
-          # 公開可能な設定はここに記述するか、リポジトリの Variables を使用します
-          OR_VENUE: "ICLR.cc/2025/Conference"
-          OR_YEAR: "2025"
+          # 対象とする学会のリストをJSON形式で指定します。
+          # シングルクオートで囲むのを忘れないでください。
+          OR_VENUES_JSON: '${{ secrets.OR_VENUES_JSON }}'
+
+          # --- その他の設定 ---
           TARGET_PLATFORM: "slack"
           ABSTRACT_MAX_CHARS: "1200"
           DRY_RUN: "false"

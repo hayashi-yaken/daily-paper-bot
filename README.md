@@ -37,7 +37,7 @@ cp .env.sample .env
 
 その後、`.env` ファイルをエディタで開き、ご自身の環境に合わせて各値を設定してください。最低限、以下の項目が必要です。
 
-- `OR_VENUE`, `OR_YEAR`
+- `OR_VENUES_JSON` (対象となる学会のリストをJSON形式で指定)
 - `TARGET_PLATFORM` (`slack` または `discord`)
 - 通知先プラットフォームに応じた認証情報 (`SLACK_BOT_TOKEN`, `DISCORD_WEBHOOK_URL` など)
 
