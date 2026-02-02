@@ -22,11 +22,8 @@ jobs:
 
       - name: Run Bot
         env:
-          # 対象とする学会のリストをJSON形式で指定します。
-          # シングルクオートで囲むのを忘れないでください。
-          OR_VENUES_JSON: '${{ secrets.OR_VENUES_JSON }}'
-
-          # --- その他の設定 ---
+          # --- 基本設定 ---
+          # 対象とする学会リストは config/venues.json で管理されます。
           TARGET_PLATFORM: "slack"
           ABSTRACT_MAX_CHARS: "1200"
           DRY_RUN: "false"
