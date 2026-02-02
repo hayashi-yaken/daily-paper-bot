@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hayashi-yaken/daily-paper-bot/internal/config"
 	"github.com/hayashi-yaken/daily-paper-bot/internal/openreview"
 )
 
 // Formatter は論文情報を文字列に整形するインターフェースです。
 type Formatter interface {
-	Format(paper *openreview.Note, venue string, year int, abstractMaxChars int) string
+	Format(paper *openreview.Note, venue config.VenueConfig, abstractMaxChars int) string
 }
 
 // --- Discord Formatter (Standard Markdown) ---
@@ -21,11 +22,10 @@ func NewDiscordFormatter() Formatter {
 	return &discordFormatter{}
 }
 
-func (f *discordFormatter) Format(paper *openreview.Note, venue string, year int, abstractMaxChars int) string {
+func (f *discordFormatter) Format(paper *openreview.Note, venue config.VenueConfig, abstractMaxChars int) string {
 	// ヘッダー部分を生成
-	shortName := getShortVenueName(venue)
-	venueLink := fmt.Sprintf("https://openreview.net/group?id=%s", venue)
-	headerText := fmt.Sprintf("📄 今日の論文 (%s %d)", shortName, year)
+	venueLink := fmt.Sprintf("https://openreview.net/group?id=%s", venue.Venue)
+	headerText := fmt.Sprintf("📄 今日の論文 (%s %d)", venue.Name, venue.Year)
 	header := fmt.Sprintf("[%s](%s)", headerText, venueLink)
 
 	return formatMessage(paper, header, abstractMaxChars)
@@ -40,25 +40,16 @@ func NewSlackFormatter() Formatter {
 	return &slackFormatter{}
 }
 
-func (f *slackFormatter) Format(paper *openreview.Note, venue string, year int, abstractMaxChars int) string {
+func (f *slackFormatter) Format(paper *openreview.Note, venue config.VenueConfig, abstractMaxChars int) string {
 	// ヘッダー部分を生成
-	shortName := getShortVenueName(venue)
-	venueLink := fmt.Sprintf("https://openreview.net/group?id=%s", venue)
-	headerText := fmt.Sprintf("📄 今日の論文 (%s %d)", shortName, year)
+	venueLink := fmt.Sprintf("https://openreview.net/group?id=%s", venue.Venue)
+	headerText := fmt.Sprintf("📄 今日の論文 (%s %d)", venue.Name, venue.Year)
 	header := fmt.Sprintf("<%s|%s>", venueLink, headerText) // Slack形式のリンク
 
 	return formatMessage(paper, header, abstractMaxChars)
 }
 
-// --- Helper Functions ---
-
-// getShortVenueName は venue のIDから短い名前を生成します (例: "ICLR.cc/2025/Conference" -> "ICLR")
-func getShortVenueName(venue string) string {
-	if parts := strings.Split(venue, "."); len(parts) > 0 {
-		return parts[0]
-	}
-	return venue
-}
+// --- Helper Function ---
 
 // formatMessage は共通のメッセージ本文を組み立てます。
 func formatMessage(paper *openreview.Note, header string, abstractMaxChars int) string {

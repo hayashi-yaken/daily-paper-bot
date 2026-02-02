@@ -7,18 +7,19 @@ import (
 	"strconv"
 )
 
+var venuesConfigPath = "assets/venues.json"
+
 // VenueConfig は一つの学会に関する設定を保持します。
 type VenueConfig struct {
-	Name     string `json:"name"`     // 表示名 (例: "ICLR")
-	Venue    string `json:"venue"`    // API用Venue ID
-	Year     int    `json:"year"`     // 年
-	VenueURL string `json:"venueURL"` // ブラウザ表示用URL
+	Name  string `json:"name"`  // 表示名 (例: "ICLR")
+	Venue string `json:"venue"` // API用Venue ID
+	Year  int    `json:"year"`  // 年
 }
 
 // Config はアプリケーション全体の設定を保持します。
 type Config struct {
 	// OpenReview
-	Venues []VenueConfig
+	Venues []VenueConfig // 複数学会を保持
 
 	// Target Platform
 	TargetPlatform string
@@ -39,24 +40,26 @@ type Config struct {
 	CustomUserAgent string
 }
 
-// Load は環境変数から設定を読み込み、検証します。
+// Load は環境変数と設定ファイルから設定を読み込み、検証します。
 func Load() (*Config, error) {
 	cfg := &Config{}
 	var err error
 
-	// --- 必須項目 ---
+	// --- ファイルからの設定 ---
 
-	// OR_VENUES_JSONから学会リストを読み込む
-	venuesJSON := os.Getenv("OR_VENUES_JSON")
-	if venuesJSON == "" {
-		return nil, fmt.Errorf("environment variable OR_VENUES_JSON is required")
+	// assets/venues.json から学会リストを読み込む
+	bytes, err := os.ReadFile(venuesConfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read venues config file at %s: %w", venuesConfigPath, err)
 	}
-	if err := json.Unmarshal([]byte(venuesJSON), &cfg.Venues); err != nil {
-		return nil, fmt.Errorf("failed to parse OR_VENUES_JSON: %w", err)
+	if err := json.Unmarshal(bytes, &cfg.Venues); err != nil {
+		return nil, fmt.Errorf("failed to parse venues config file: %w", err)
 	}
 	if len(cfg.Venues) == 0 {
-		return nil, fmt.Errorf("no venues found in OR_VENUES_JSON")
+		return nil, fmt.Errorf("no venues found in %s", venuesConfigPath)
 	}
+
+	// --- 環境変数からの設定 ---
 
 	// TargetPlatform
 	cfg.TargetPlatform = os.Getenv("TARGET_PLATFORM")
