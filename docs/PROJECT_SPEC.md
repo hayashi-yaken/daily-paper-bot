@@ -85,19 +85,26 @@ OpenReview 上の対象カンファレンス（初期は ICLR）から論文を�
 .
 ├── cmd/
 │ └── dailybot/
-│ └── main.go # エントリーポイント
+│     └── main.go      # エントリーポイント
 ├── internal/
-│ ├── openreview/  # OpenReview クライアント
-│ ├── selector/    # 論文選定ロジック
-│ ├── formatter/   # 投稿文整形
-│ ├── notifier/    # Slack/Discord 投稿
-│ ├── storage/     # 重複防止ストレージ
-│ └── config/      # 設定ロード
+│ ├── config/        # 設定ロード
+│ ├── venueselector/ # 学会選定ロジック
+│ ├── openreview/    # OpenReview クライアント
+│ ├── selector/      # 論文選定ロジック
+│ ├── formatter/     # 投稿文整形
+│ ├── notifier/      # Slack/Discord 投稿
+│ └── storage/       # 重複防止ストレージ
+├── assets/
+│ └── venues.json    # 対象学会リスト
 ├── data/
-│ └── posted.json  # 投稿済み記録（MVP）
+│ └── posted.json    # 投稿済み記録
+├── docs/
+│ ├── tasks/
+│ │   └── v1/        # v1完了済みチケット
+│ └── PROJECT_SPEC.md
 ├── .github/
 │ └── workflows/
-│ └── daily.yml    # 定期実行
+│     └── daily.yml  # 定期実行
 ├── go.mod
 ├── go.sum
 └── README.md
