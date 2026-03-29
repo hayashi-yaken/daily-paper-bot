@@ -85,3 +85,20 @@ func TestLogin_Failure_NonOKStatus(t *testing.T) {
 		t.Fatal("expected an error, but got nil")
 	}
 }
+
+func TestLogin_Failure_EmptyToken(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, `{"token":""}`)
+	}))
+	defer server.Close()
+
+	client := NewClient("test-agent")
+	client.BaseURL = server.URL
+
+	err := client.Login("user@example.com", "password")
+	if err == nil {
+		t.Fatal("expected an error for empty token, but got nil")
+	}
+}
