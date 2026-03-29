@@ -1,10 +1,13 @@
 package openreview
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -13,6 +16,7 @@ type Client struct {
 	httpClient *http.Client
 	BaseURL    string
 	UserAgent  string
+	token      string // 追加: 空文字 = 未認証
 }
 
 // NewClient は新しいOpenReviewクライアントを生成します。
@@ -59,11 +63,14 @@ func (c *Client) GetNotes(venue string) ([]Note, error) {
 	// APIエンドポイントを構築
 	endpoint := fmt.Sprintf("%s/notes?invitation=%s/-/Submission", c.BaseURL, url.QueryEscape(venue))
 
-	req, err := http.NewRequest("GET", endpoint, nil)
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("User-Agent", c.UserAgent)
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -91,4 +98,53 @@ func (n *Note) GetID() string {
 // GetTitle はPaperインターフェースを満たすためにNoteのタイトルを返します。
 func (n *Note) GetTitle() string {
 	return n.Content.Title.Value
+}
+
+// loginRequest は /login エンドポイントへのリクエストボディです。
+type loginRequest struct {
+	ID       string `json:"id"`
+	Password string `json:"password"`
+}
+
+// loginResponse は /login エンドポイントのレスポンスボディです。
+type loginResponse struct {
+	Token string `json:"token"`
+}
+
+// Login は OpenReview API で認証し、取得したトークンをクライアントに保存します。
+func (c *Client) Login(email, password string) error {
+	payload, err := json.Marshal(loginRequest{ID: email, Password: password})
+	if err != nil {
+		return fmt.Errorf("failed to marshal login request: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, c.BaseURL+"/login", bytes.NewReader(payload))
+	if err != nil {
+		return fmt.Errorf("failed to create login request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", c.UserAgent)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute login request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 256))
+		return fmt.Errorf("login failed with status code: %d, body: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var loginResp loginResponse
+	if err := json.NewDecoder(resp.Body).Decode(&loginResp); err != nil {
+		return fmt.Errorf("failed to decode login response: %w", err)
+	}
+
+	if loginResp.Token == "" {
+		return fmt.Errorf("login succeeded but response contained empty token")
+	}
+
+	c.token = loginResp.Token
+	return nil
 }

@@ -34,6 +34,8 @@ jobs:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           CUSTOM_USER_AGENT: ${{ secrets.CUSTOM_USER_AGENT }} # 任意
+          OR_EMAIL: ${{ secrets.OR_EMAIL }}
+          OR_PASSWORD: ${{ secrets.OR_PASSWORD }}
         run: go run ./cmd/dailybot
 
       - name: Commit and push if changed

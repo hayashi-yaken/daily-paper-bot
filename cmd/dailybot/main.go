@@ -44,6 +44,12 @@ func run() error {
 	// 3. 各コンポーネントを初期化
 	log.Println("INFO: Initializing components...")
 	orClient := openreview.NewClient(cfg.CustomUserAgent)
+	if cfg.OpenReviewEmail != "" && cfg.OpenReviewPassword != "" {
+		if err := orClient.Login(cfg.OpenReviewEmail, cfg.OpenReviewPassword); err != nil {
+			return fmt.Errorf("failed to login to openreview: %w", err)
+		}
+		log.Println("INFO: Authenticated to OpenReview.")
+	}
 	jsonStorage, err := storage.NewJSONStorage()
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage: %w", err)
