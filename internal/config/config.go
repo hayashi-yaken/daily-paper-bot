@@ -38,6 +38,10 @@ type Config struct {
 
 	// Misc
 	CustomUserAgent string
+
+	// OpenReview Auth (optional)
+	OpenReviewEmail    string
+	OpenReviewPassword string
 }
 
 // Load は環境変数と設定ファイルから設定を読み込み、検証します。
@@ -115,6 +119,9 @@ func Load() (*Config, error) {
 	if cfg.CustomUserAgent == "" {
 		cfg.CustomUserAgent = "daily-paper-bot/1.0 (+https://github.com/hayashi-yaken/daily-paper-bot)"
 	}
+
+	cfg.OpenReviewEmail = os.Getenv("OR_EMAIL")
+	cfg.OpenReviewPassword = os.Getenv("OR_PASSWORD")
 
 	return cfg, nil
 }

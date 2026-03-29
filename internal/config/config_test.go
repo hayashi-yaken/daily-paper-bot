@@ -80,3 +80,59 @@ func TestLoad_Failure_FileError(t *testing.T) {
 		}
 	})
 }
+
+func TestLoad_WithOpenReviewCredentials(t *testing.T) {
+	t.Run("both credentials set", func(t *testing.T) {
+		jsonContent := `[{"name":"ICLR","venue":"ICLR.cc/2025/Conference","year":2025}]`
+		cleanup := setupTestConfigFile(t, jsonContent)
+		defer cleanup()
+
+		os.Setenv("TARGET_PLATFORM", "slack")
+		os.Setenv("SLACK_BOT_TOKEN", "test_token")
+		os.Setenv("SLACK_CHANNEL_ID", "test_channel")
+		os.Setenv("OR_EMAIL", "user@example.com")
+		os.Setenv("OR_PASSWORD", "secret")
+		defer os.Unsetenv("TARGET_PLATFORM")
+		defer os.Unsetenv("SLACK_BOT_TOKEN")
+		defer os.Unsetenv("SLACK_CHANNEL_ID")
+		defer os.Unsetenv("OR_EMAIL")
+		defer os.Unsetenv("OR_PASSWORD")
+
+		cfg, err := Load()
+		if err != nil {
+			t.Fatalf("Load() failed: %v", err)
+		}
+		if cfg.OpenReviewEmail != "user@example.com" {
+			t.Errorf("expected OpenReviewEmail 'user@example.com', got '%s'", cfg.OpenReviewEmail)
+		}
+		if cfg.OpenReviewPassword != "secret" {
+			t.Errorf("expected OpenReviewPassword 'secret', got '%s'", cfg.OpenReviewPassword)
+		}
+	})
+
+	t.Run("credentials not set", func(t *testing.T) {
+		jsonContent := `[{"name":"ICLR","venue":"ICLR.cc/2025/Conference","year":2025}]`
+		cleanup := setupTestConfigFile(t, jsonContent)
+		defer cleanup()
+
+		os.Setenv("TARGET_PLATFORM", "slack")
+		os.Setenv("SLACK_BOT_TOKEN", "test_token")
+		os.Setenv("SLACK_CHANNEL_ID", "test_channel")
+		os.Unsetenv("OR_EMAIL")
+		os.Unsetenv("OR_PASSWORD")
+		defer os.Unsetenv("TARGET_PLATFORM")
+		defer os.Unsetenv("SLACK_BOT_TOKEN")
+		defer os.Unsetenv("SLACK_CHANNEL_ID")
+
+		cfg, err := Load()
+		if err != nil {
+			t.Fatalf("Load() failed: %v", err)
+		}
+		if cfg.OpenReviewEmail != "" {
+			t.Errorf("expected empty OpenReviewEmail, got '%s'", cfg.OpenReviewEmail)
+		}
+		if cfg.OpenReviewPassword != "" {
+			t.Errorf("expected empty OpenReviewPassword, got '%s'", cfg.OpenReviewPassword)
+		}
+	})
+}
