@@ -1,6 +1,9 @@
 package openreview
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 )
@@ -40,4 +43,45 @@ func TestGetNotes_Integration(t *testing.T) {
 
 		t.Logf("Successfully fetched %d notes. First note ID: %s, Title: %s", len(notes), firstNote.ID, firstNote.Content.Title.Value)
 	})
+}
+
+func TestLogin_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/login" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Errorf("unexpected method: %s", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, `{"token": "test-jwt-token", "user": {}}`)
+	}))
+	defer server.Close()
+
+	client := NewClient("test-agent")
+	client.BaseURL = server.URL
+
+	err := client.Login("user@example.com", "password")
+	if err != nil {
+		t.Fatalf("expected no error, but got: %v", err)
+	}
+	if client.token != "test-jwt-token" {
+		t.Errorf("expected token 'test-jwt-token', got '%s'", client.token)
+	}
+}
+
+func TestLogin_Failure_NonOKStatus(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer server.Close()
+
+	client := NewClient("test-agent")
+	client.BaseURL = server.URL
+
+	err := client.Login("user@example.com", "wrong-password")
+	if err == nil {
+		t.Fatal("expected an error, but got nil")
+	}
 }

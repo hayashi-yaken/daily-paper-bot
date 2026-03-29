@@ -1,6 +1,7 @@
 package openreview
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,6 +14,7 @@ type Client struct {
 	httpClient *http.Client
 	BaseURL    string
 	UserAgent  string
+	token      string // 追加: 空文字 = 未認証
 }
 
 // NewClient は新しいOpenReviewクライアントを生成します。
@@ -91,4 +93,48 @@ func (n *Note) GetID() string {
 // GetTitle はPaperインターフェースを満たすためにNoteのタイトルを返します。
 func (n *Note) GetTitle() string {
 	return n.Content.Title.Value
+}
+
+// loginRequest は /login エンドポイントへのリクエストボディです。
+type loginRequest struct {
+	ID       string `json:"id"`
+	Password string `json:"password"`
+}
+
+// loginResponse は /login エンドポイントのレスポンスボディです。
+type loginResponse struct {
+	Token string `json:"token"`
+}
+
+// Login は OpenReview API で認証し、取得したトークンをクライアントに保存します。
+func (c *Client) Login(email, password string) error {
+	payload, err := json.Marshal(loginRequest{ID: email, Password: password})
+	if err != nil {
+		return fmt.Errorf("failed to marshal login request: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, c.BaseURL+"/login", bytes.NewReader(payload))
+	if err != nil {
+		return fmt.Errorf("failed to create login request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", c.UserAgent)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute login request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("login failed with status code: %d", resp.StatusCode)
+	}
+
+	var loginResp loginResponse
+	if err := json.NewDecoder(resp.Body).Decode(&loginResp); err != nil {
+		return fmt.Errorf("failed to decode login response: %w", err)
+	}
+
+	c.token = loginResp.Token
+	return nil
 }
