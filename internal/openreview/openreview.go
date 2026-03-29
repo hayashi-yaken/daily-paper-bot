@@ -135,6 +135,10 @@ func (c *Client) Login(email, password string) error {
 		return fmt.Errorf("failed to decode login response: %w", err)
 	}
 
+	if loginResp.Token == "" {
+		return fmt.Errorf("login succeeded but response contained empty token")
+	}
+
 	c.token = loginResp.Token
 	return nil
 }
