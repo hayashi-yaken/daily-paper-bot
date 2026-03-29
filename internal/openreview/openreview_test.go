@@ -102,3 +102,49 @@ func TestLogin_Failure_EmptyToken(t *testing.T) {
 		t.Fatal("expected an error for empty token, but got nil")
 	}
 }
+
+func TestGetNotes_WithAuthToken(t *testing.T) {
+	var capturedAuthHeader string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedAuthHeader = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, `{"notes": [], "count": 0}`)
+	}))
+	defer server.Close()
+
+	client := NewClient("test-agent")
+	client.BaseURL = server.URL
+	client.token = "test-jwt-token"
+
+	_, err := client.GetNotes("TestVenue/Conference")
+	if err != nil {
+		t.Fatalf("expected no error, but got: %v", err)
+	}
+	if capturedAuthHeader != "Bearer test-jwt-token" {
+		t.Errorf("expected Authorization header 'Bearer test-jwt-token', got '%s'", capturedAuthHeader)
+	}
+}
+
+func TestGetNotes_WithoutAuthToken(t *testing.T) {
+	var capturedAuthHeader string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedAuthHeader = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, `{"notes": [], "count": 0}`)
+	}))
+	defer server.Close()
+
+	client := NewClient("test-agent")
+	client.BaseURL = server.URL
+	// token は空のまま（デフォルト）
+
+	_, err := client.GetNotes("TestVenue/Conference")
+	if err != nil {
+		t.Fatalf("expected no error, but got: %v", err)
+	}
+	if capturedAuthHeader != "" {
+		t.Errorf("expected no Authorization header, got '%s'", capturedAuthHeader)
+	}
+}
