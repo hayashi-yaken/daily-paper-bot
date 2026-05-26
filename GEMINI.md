@@ -14,8 +14,6 @@
   - `slack-go/slack` (Slack通知用)
   - `github.com/joho/godotenv` (.envファイル読み込み用)
   - その他は標準ライブラリ（HTTP, JSONなど）を中心に使用
-- **永続化**: リポジトリにコミットされる単一の `data/posted.json` ファイル
-
 ## 3. プロジェクト構造
 
 このプロジェクトは、標準的なGoアプリケーションのレイアウトに従います。
@@ -25,13 +23,11 @@
   - `config/`: 設定の読み込み処理。
   - `venueselector/`: 実行対象の学会を選定するロジック。
   - `openreview/`: OpenReview APIから論文データを取得するためのクライアント。
-  - `storage/`: 重複投稿を防ぐため、`data/posted.json` の読み書きを管理。
   - `selector/`: 候補リストから論文を1本選定するロジック。
   - `formatter/`: 論文情報を投稿用のメッセージ文字列に整形。
   - `notifier/`: SlackまたはDiscordへメッセージを送信する処理。
 - `assets/`: 設定データなど、静的な資産を格納します。
   - `venues.json`: 対象となる学会のリストを定義する設定ファイル。
-- `data/`: 投稿済み論文を記録する `posted.json` ファイルを格納します。
 - `docs/`: ドキュメント類を格納します。
   - `tasks/v1/`: v1開発チケット。
 - `.github/workflows/`: 定期実行のためのGitHub Actionsワークフローファイル (`daily.yml`) を格納します。
@@ -102,7 +98,6 @@ go test -tags=integration ./... -v
 
 - デプロイは `.github/workflows/daily.yml` に定義されたGitHub Actionsによって完全に処理されます。
 - ワークフローは毎日定刻に実行 (`cron`) されるほか、手動での実行 (`workflow_dispatch`) も可能です。
-- 実行成功後、ワークフローは `data/posted.json` への変更を自動的にコミット＆プッシュし、状態を更新します。
 - 全てのシークレットは、リポジトリの「Settings > Secrets and variables > Actions」で設定する必要があります。
 
 ## 7. 作業プロトコル (Working Protocol)
