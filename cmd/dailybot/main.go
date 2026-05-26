@@ -84,7 +84,7 @@ func run() error {
 	selectedPaper, err := paperSelector.Select(papers)
 	if err != nil {
 		if errors.Is(err, selector.ErrNoCandidates) {
-			log.Println("INFO: No new papers to post. Nothing to do.")
+			log.Println("INFO: No valid papers found after filtering. Nothing to post.")
 			return nil // 候補なしは正常終了
 		}
 		return fmt.Errorf("failed to select paper: %w", err)

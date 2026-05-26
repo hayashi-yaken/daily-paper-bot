@@ -92,7 +92,7 @@ go test -tags=integration ./... -v
 - **`SLACK_CHANNEL_ID`**: (Secret) 投稿先のチャンネルID。
 - **`DISCORD_WEBHOOK_URL`**: (Secret) Discord用のWebhook URL。
 - **`ABSTRACT_MAX_CHARS`**: (任意) Abstractの最大文字数。デフォルトは `1200`。
-- **`DRY_RUN`**: (任意) `true` の場合、Botは投稿も結果の保存も行いません。
+- **`DRY_RUN`**: (任意) `true` の場合、Botは投稿を行いません。
 - **`CUSTOM_USER_AGENT`**: (任意) OpenReview APIへのリクエスト時に使用するUser-Agent。
 
 ## 6. デプロイ
