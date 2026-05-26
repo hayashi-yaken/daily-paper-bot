@@ -10,7 +10,6 @@ import (
 	"github.com/hayashi-yaken/daily-paper-bot/internal/notifier"
 	"github.com/hayashi-yaken/daily-paper-bot/internal/openreview"
 	"github.com/hayashi-yaken/daily-paper-bot/internal/selector"
-	"github.com/hayashi-yaken/daily-paper-bot/internal/storage"
 	"github.com/hayashi-yaken/daily-paper-bot/internal/venueselector"
 	"github.com/joho/godotenv"
 )
@@ -50,11 +49,7 @@ func run() error {
 		}
 		log.Println("INFO: Authenticated to OpenReview.")
 	}
-	jsonStorage, err := storage.NewJSONStorage()
-	if err != nil {
-		return fmt.Errorf("failed to initialize storage: %w", err)
-	}
-	paperSelector := selector.NewRandomSelector(jsonStorage.IsPosted)
+	paperSelector := selector.NewRandomSelector()
 
 	var paperNotifier notifier.Notifier
 	var paperFormatter formatter.Formatter
@@ -118,13 +113,6 @@ func run() error {
 		return fmt.Errorf("failed to post notification: %w", err) // 投稿失敗時は記録しない
 	}
 	log.Println("INFO: Post successful.")
-
-	log.Println("INFO: Saving posted record...")
-	jsonStorage.Add(selectedPaper.GetID(), selectedVenue.Venue)
-	if err := jsonStorage.Save(); err != nil {
-		return fmt.Errorf("failed to save posted record: %w", err)
-	}
-	log.Println("INFO: Record saved.")
 
 	return nil
 }
