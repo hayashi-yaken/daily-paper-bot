@@ -101,16 +101,16 @@ func run() error {
 	// 6. 投稿メッセージを生成
 	message := paperFormatter.Format(selectedNote, selectedVenue, cfg.AbstractMaxChars)
 
-	// 7. DryRun または 投稿 & 記録
+	// 7. DryRun または 投稿
 	if cfg.DryRun {
-		log.Println("INFO: Dry run mode is enabled. Skipping post and save.")
+		log.Println("INFO: Dry run mode is enabled. Skipping post.")
 		log.Printf("--- Message to be posted ---\n%s\n--------------------------", message)
 		return nil
 	}
 
 	log.Printf("INFO: Posting to %s...", cfg.TargetPlatform)
 	if err := paperNotifier.Post(message); err != nil {
-		return fmt.Errorf("failed to post notification: %w", err) // 投稿失敗時は記録しない
+		return fmt.Errorf("failed to post notification: %w", err)
 	}
 	log.Println("INFO: Post successful.")
 
