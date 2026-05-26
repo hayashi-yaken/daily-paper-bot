@@ -14,6 +14,7 @@
   - `slack-go/slack` (Slack通知用)
   - `github.com/joho/godotenv` (.envファイル読み込み用)
   - その他は標準ライブラリ（HTTP, JSONなど）を中心に使用
+
 ## 3. プロジェクト構造
 
 このプロジェクトは、標準的なGoアプリケーションのレイアウトに従います。
