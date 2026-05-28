@@ -23,11 +23,11 @@ jobs:
           # --- 基本設定 ---
           # 対象とする学会リストは assets/venues.json で管理されます。
           TARGET_PLATFORM: "slack"
-          ABSTRACT_MAX_CHARS: "1200"
           DRY_RUN: "false"
 
           # --- Secrets ---
           # 以下の値はリポジトリの「Settings > Secrets and variables > Actions」で設定してください
+          ABSTRACT_MAX_CHARS: ${{ secrets.ABSTRACT_MAX_CHARS }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
