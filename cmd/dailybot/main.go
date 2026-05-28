@@ -10,7 +10,6 @@ import (
 	"github.com/hayashi-yaken/daily-paper-bot/internal/notifier"
 	"github.com/hayashi-yaken/daily-paper-bot/internal/openreview"
 	"github.com/hayashi-yaken/daily-paper-bot/internal/selector"
-	"github.com/hayashi-yaken/daily-paper-bot/internal/storage"
 	"github.com/hayashi-yaken/daily-paper-bot/internal/venueselector"
 	"github.com/joho/godotenv"
 )
@@ -50,11 +49,7 @@ func run() error {
 		}
 		log.Println("INFO: Authenticated to OpenReview.")
 	}
-	jsonStorage, err := storage.NewJSONStorage()
-	if err != nil {
-		return fmt.Errorf("failed to initialize storage: %w", err)
-	}
-	paperSelector := selector.NewRandomSelector(jsonStorage.IsPosted)
+	paperSelector := selector.NewRandomSelector()
 
 	var paperNotifier notifier.Notifier
 	var paperFormatter formatter.Formatter
@@ -89,7 +84,7 @@ func run() error {
 	selectedPaper, err := paperSelector.Select(papers)
 	if err != nil {
 		if errors.Is(err, selector.ErrNoCandidates) {
-			log.Println("INFO: No new papers to post. Nothing to do.")
+			log.Println("INFO: No valid papers found after filtering. Nothing to post.")
 			return nil // 候補なしは正常終了
 		}
 		return fmt.Errorf("failed to select paper: %w", err)
@@ -106,25 +101,18 @@ func run() error {
 	// 6. 投稿メッセージを生成
 	message := paperFormatter.Format(selectedNote, selectedVenue, cfg.AbstractMaxChars)
 
-	// 7. DryRun または 投稿 & 記録
+	// 7. DryRun または 投稿
 	if cfg.DryRun {
-		log.Println("INFO: Dry run mode is enabled. Skipping post and save.")
+		log.Println("INFO: Dry run mode is enabled. Skipping post.")
 		log.Printf("--- Message to be posted ---\n%s\n--------------------------", message)
 		return nil
 	}
 
 	log.Printf("INFO: Posting to %s...", cfg.TargetPlatform)
 	if err := paperNotifier.Post(message); err != nil {
-		return fmt.Errorf("failed to post notification: %w", err) // 投稿失敗時は記録しない
+		return fmt.Errorf("failed to post notification: %w", err)
 	}
 	log.Println("INFO: Post successful.")
-
-	log.Println("INFO: Saving posted record...")
-	jsonStorage.Add(selectedPaper.GetID(), selectedVenue.Venue)
-	if err := jsonStorage.Save(); err != nil {
-		return fmt.Errorf("failed to save posted record: %w", err)
-	}
-	log.Println("INFO: Record saved.")
 
 	return nil
 }

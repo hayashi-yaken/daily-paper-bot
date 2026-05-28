@@ -8,8 +8,6 @@ on:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # posted.json をコミットするためにリポジトリへの書き込み権限が必要
 
     steps:
       - name: Checkout repository
@@ -25,11 +23,11 @@ jobs:
           # --- 基本設定 ---
           # 対象とする学会リストは assets/venues.json で管理されます。
           TARGET_PLATFORM: "slack"
-          ABSTRACT_MAX_CHARS: "1200"
           DRY_RUN: "false"
 
           # --- Secrets ---
           # 以下の値はリポジトリの「Settings > Secrets and variables > Actions」で設定してください
+          ABSTRACT_MAX_CHARS: ${{ secrets.ABSTRACT_MAX_CHARS }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -37,12 +35,3 @@ jobs:
           OR_EMAIL: ${{ secrets.OR_EMAIL }}
           OR_PASSWORD: ${{ secrets.OR_PASSWORD }}
         run: go run ./cmd/dailybot
-
-      - name: Commit and push if changed
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore(bot): Update posted papers"
-          file_pattern: "data/posted.json"
-          commit_user_name: "github-actions[bot]"
-          commit_user_email: "github-actions[bot]@users.noreply.github.com"
-          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
