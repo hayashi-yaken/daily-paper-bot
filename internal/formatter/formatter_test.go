@@ -34,3 +34,57 @@ func TestFormatters_HeaderLinkPointsToPaper(t *testing.T) {
 		}
 	})
 }
+
+func TestFormatters_PDFLine(t *testing.T) {
+	venue := config.VenueConfig{Name: "ICLR", Venue: "ICLR.cc/2025/Conference", Year: 2025}
+
+	t.Run("Slack with PDF shows *PDF* line", func(t *testing.T) {
+		paper := &openreview.Note{
+			ID: "PID",
+			Content: openreview.NoteContent{
+				Title:   openreview.ValueField[string]{Value: "T"},
+				Authors: openreview.ValueField[[]string]{Value: []string{"A"}},
+				PDF:     openreview.ValueField[string]{Value: "/pdf?id=PID"},
+			},
+		}
+		msg := NewSlackFormatter().Format(paper, venue, 100, "")
+		if !strings.Contains(msg.Main, "*PDF*: https://openreview.net/pdf?id=PID") {
+			t.Errorf("expected Slack output to contain '*PDF*: ...'.\nGot: %s", msg.Main)
+		}
+		if strings.Contains(msg.Main, "*Link*:") {
+			t.Errorf("expected Slack output not to contain legacy '*Link*:'.\nGot: %s", msg.Main)
+		}
+	})
+
+	t.Run("Slack without PDF omits link line", func(t *testing.T) {
+		paper := &openreview.Note{
+			ID: "PID",
+			Content: openreview.NoteContent{
+				Title:   openreview.ValueField[string]{Value: "T"},
+				Authors: openreview.ValueField[[]string]{Value: []string{"A"}},
+			},
+		}
+		msg := NewSlackFormatter().Format(paper, venue, 100, "")
+		if strings.Contains(msg.Main, "*PDF*:") {
+			t.Errorf("expected no *PDF*: line when PDF is missing.\nGot: %s", msg.Main)
+		}
+		if strings.Contains(msg.Main, "*Link*:") {
+			t.Errorf("expected no legacy *Link*: line.\nGot: %s", msg.Main)
+		}
+	})
+
+	t.Run("Discord with PDF shows *PDF* line", func(t *testing.T) {
+		paper := &openreview.Note{
+			ID: "PID",
+			Content: openreview.NoteContent{
+				Title:   openreview.ValueField[string]{Value: "T"},
+				Authors: openreview.ValueField[[]string]{Value: []string{"A"}},
+				PDF:     openreview.ValueField[string]{Value: "/pdf?id=PID"},
+			},
+		}
+		msg := NewDiscordFormatter().Format(paper, venue, 100, "")
+		if !strings.Contains(msg.Main, "*PDF*: https://openreview.net/pdf?id=PID") {
+			t.Errorf("expected Discord output to contain '*PDF*: ...'.\nGot: %s", msg.Main)
+		}
+	})
+}

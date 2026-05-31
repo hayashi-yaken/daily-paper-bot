@@ -66,25 +66,22 @@ func formatMessage(paper *openreview.Note, header string, abstractMaxChars int) 
 	abstract := truncateRunes(paper.Content.Abstract.Value, abstractMaxChars)
 	authors := strings.Join(paper.Content.Authors.Value, ", ")
 
-	var link string
-	pdfPath := paper.Content.PDF.Value
-	if pdfPath != "" {
+	var pdfLine string
+	if pdfPath := paper.Content.PDF.Value; pdfPath != "" {
+		pdfURL := pdfPath
 		if !strings.HasPrefix(pdfPath, "http") {
-			link = "https://openreview.net" + pdfPath
-		} else {
-			link = pdfPath
+			pdfURL = "https://openreview.net" + pdfPath
 		}
-	} else {
-		link = fmt.Sprintf("https://openreview.net/forum?id=%s", paper.ID)
+		pdfLine = fmt.Sprintf("\n\n*PDF*: %s", pdfURL)
 	}
 
 	return fmt.Sprintf(
-		"%s\n\n*Title*: %s\n*Authors*: %s\n\n*Abstract*:\n%s\n\n*Link*:\n%s\n\nID: `%s`",
+		"%s\n\n*Title*: %s\n*Authors*: %s\n\n*Abstract*:\n%s%s\n\nID: `%s`",
 		header,
 		paper.Content.Title.Value,
 		authors,
 		abstract,
-		link,
+		pdfLine,
 		paper.ID,
 	)
 }
