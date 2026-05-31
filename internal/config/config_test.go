@@ -215,6 +215,26 @@ func TestLoad_WithTranslator(t *testing.T) {
 		}
 	})
 
+	t.Run("custom endpoint is respected", func(t *testing.T) {
+		cleanup := setupTestConfigFile(t, jsonContent)
+		defer cleanup()
+		setBasicEnv()
+		defer unsetBasicEnv()
+		os.Setenv("TRANSLATE_ENABLED", "true")
+		os.Setenv("AZURE_TRANSLATOR_KEY", "k")
+		os.Setenv("AZURE_TRANSLATOR_REGION", "japaneast")
+		os.Setenv("AZURE_TRANSLATOR_ENDPOINT", "https://custom.example.com/translator")
+		defer unsetTranslatorEnv()
+
+		cfg, err := Load()
+		if err != nil {
+			t.Fatalf("Load() failed: %v", err)
+		}
+		if cfg.AzureTranslatorEndpoint != "https://custom.example.com/translator" {
+			t.Errorf("expected custom endpoint 'https://custom.example.com/translator', got %q", cfg.AzureTranslatorEndpoint)
+		}
+	})
+
 	t.Run("disabled passes through without keys", func(t *testing.T) {
 		cleanup := setupTestConfigFile(t, jsonContent)
 		defer cleanup()
