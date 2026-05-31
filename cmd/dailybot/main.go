@@ -109,7 +109,7 @@ func run() error {
 	}
 
 	log.Printf("INFO: Posting to %s...", cfg.TargetPlatform)
-	if err := paperNotifier.Post(message.Main); err != nil {
+	if err := paperNotifier.Post(message); err != nil {
 		return fmt.Errorf("failed to post notification: %w", err)
 	}
 	log.Println("INFO: Post successful.")

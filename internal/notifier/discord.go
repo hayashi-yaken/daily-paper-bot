@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/hayashi-yaken/daily-paper-bot/internal/formatter"
 )
 
 // DiscordNotifier はDiscordのWebhookにメッセージを投稿します。
@@ -28,8 +30,8 @@ type discordPayload struct {
 }
 
 // Post は指定されたメッセージをDiscordのWebhookに投稿します。
-func (n *DiscordNotifier) Post(message string) error {
-	payload := discordPayload{Content: message}
+func (n *DiscordNotifier) Post(msg formatter.Message) error {
+	payload := discordPayload{Content: msg.Main}
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal discord payload: %w", err)
@@ -50,6 +52,5 @@ func (n *DiscordNotifier) Post(message string) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("discord webhook returned non-2xx status: %d", resp.StatusCode)
 	}
-
 	return nil
 }

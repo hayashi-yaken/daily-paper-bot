@@ -3,6 +3,7 @@ package notifier
 import (
 	"fmt"
 
+	"github.com/hayashi-yaken/daily-paper-bot/internal/formatter"
 	"github.com/slack-go/slack"
 )
 
@@ -27,11 +28,11 @@ func NewSlackNotifier(botToken, channelID string) *SlackNotifier {
 }
 
 // Post は指定されたメッセージをSlackチャンネルに投稿します。
-func (n *SlackNotifier) Post(message string) error {
+func (n *SlackNotifier) Post(msg formatter.Message) error {
 	_, _, err := n.poster.PostMessage(
 		n.channelID,
-		slack.MsgOptionText(message, false),
-		slack.MsgOptionAsUser(true), // Botとして投稿
+		slack.MsgOptionText(msg.Main, false),
+		slack.MsgOptionAsUser(true),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to post message to slack: %w", err)
