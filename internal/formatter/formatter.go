@@ -34,7 +34,9 @@ func (f *discordFormatter) Format(paper *openreview.Note, venue config.VenueConf
 	paperLink := fmt.Sprintf("https://openreview.net/forum?id=%s", paper.ID)
 	headerText := fmt.Sprintf("📄 今日の論文 (%s %d)", venue.Name, venue.Year)
 	header := fmt.Sprintf("[%s](%s)", headerText, paperLink)
-	return Message{Main: formatMessage(paper, header, abstractMaxChars)}
+
+	main := formatMessage(paper, header, abstractBlock(paper.Content.Abstract.Value, jaAbstract, abstractMaxChars))
+	return Message{Main: main}
 }
 
 // --- Slack Formatter (Slack Mrkdwn) ---
@@ -50,7 +52,14 @@ func (f *slackFormatter) Format(paper *openreview.Note, venue config.VenueConfig
 	paperLink := fmt.Sprintf("https://openreview.net/forum?id=%s", paper.ID)
 	headerText := fmt.Sprintf("📄 今日の論文 (%s %d)", venue.Name, venue.Year)
 	header := fmt.Sprintf("<%s|%s>", paperLink, headerText)
-	return Message{Main: formatMessage(paper, header, abstractMaxChars)}
+
+	main := formatMessage(paper, header, abstractBlock(paper.Content.Abstract.Value, jaAbstract, abstractMaxChars))
+
+	var sub string
+	if jaAbstract != "" {
+		sub = fmt.Sprintf("*Original Abstract*:\n%s", truncateRunes(paper.Content.Abstract.Value, abstractMaxChars))
+	}
+	return Message{Main: main, Sub: sub}
 }
 
 // --- Helper Function ---
@@ -62,8 +71,14 @@ func truncateRunes(s string, max int) string {
 	return string([]rune(s)[:max]) + "..."
 }
 
-func formatMessage(paper *openreview.Note, header string, abstractMaxChars int) string {
-	abstract := truncateRunes(paper.Content.Abstract.Value, abstractMaxChars)
+func abstractBlock(originalAbstract, jaAbstract string, abstractMaxChars int) string {
+	if jaAbstract != "" {
+		return fmt.Sprintf("*Abstract (日本語)*:\n%s", truncateRunes(jaAbstract, abstractMaxChars))
+	}
+	return fmt.Sprintf("*Abstract*:\n%s", truncateRunes(originalAbstract, abstractMaxChars))
+}
+
+func formatMessage(paper *openreview.Note, header, abstractBlock string) string {
 	authors := strings.Join(paper.Content.Authors.Value, ", ")
 
 	var pdfLine string
@@ -76,11 +91,11 @@ func formatMessage(paper *openreview.Note, header string, abstractMaxChars int) 
 	}
 
 	return fmt.Sprintf(
-		"%s\n\n*Title*: %s\n*Authors*: %s\n\n*Abstract*:\n%s%s\n\nID: `%s`",
+		"%s\n\n*Title*: %s\n*Authors*: %s\n\n%s%s\n\nID: `%s`",
 		header,
 		paper.Content.Title.Value,
 		authors,
-		abstract,
+		abstractBlock,
 		pdfLine,
 		paper.ID,
 	)

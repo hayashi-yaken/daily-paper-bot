@@ -88,3 +88,48 @@ func TestFormatters_PDFLine(t *testing.T) {
 		}
 	})
 }
+
+func TestSlackFormatter_WithTranslation(t *testing.T) {
+	paper := &openreview.Note{
+		ID: "PID",
+		Content: openreview.NoteContent{
+			Title:    openreview.ValueField[string]{Value: "T"},
+			Authors:  openreview.ValueField[[]string]{Value: []string{"A"}},
+			Abstract: openreview.ValueField[string]{Value: "english abstract"},
+		},
+	}
+	venue := config.VenueConfig{Name: "ICLR", Venue: "ICLR.cc/2025/Conference", Year: 2025}
+
+	msg := NewSlackFormatter().Format(paper, venue, 100, "日本語訳テスト")
+
+	if !strings.Contains(msg.Main, "*Abstract (日本語)*:\n日本語訳テスト") {
+		t.Errorf("expected Main to contain Japanese abstract heading.\nGot: %s", msg.Main)
+	}
+	if strings.Contains(msg.Main, "english abstract") {
+		t.Errorf("expected Main not to contain original abstract when translated.\nGot: %s", msg.Main)
+	}
+	if !strings.Contains(msg.Sub, "*Original Abstract*:\nenglish abstract") {
+		t.Errorf("expected Sub to contain original abstract block.\nGot: %s", msg.Sub)
+	}
+}
+
+func TestSlackFormatter_WithoutTranslation_LegacyHeading(t *testing.T) {
+	paper := &openreview.Note{
+		ID: "PID",
+		Content: openreview.NoteContent{
+			Title:    openreview.ValueField[string]{Value: "T"},
+			Authors:  openreview.ValueField[[]string]{Value: []string{"A"}},
+			Abstract: openreview.ValueField[string]{Value: "english abstract"},
+		},
+	}
+	venue := config.VenueConfig{Name: "ICLR", Venue: "ICLR.cc/2025/Conference", Year: 2025}
+
+	msg := NewSlackFormatter().Format(paper, venue, 100, "")
+
+	if !strings.Contains(msg.Main, "*Abstract*:\nenglish abstract") {
+		t.Errorf("expected Main to show original abstract under *Abstract*: when no translation.\nGot: %s", msg.Main)
+	}
+	if msg.Sub != "" {
+		t.Errorf("expected empty Sub when no translation, got %q", msg.Sub)
+	}
+}
