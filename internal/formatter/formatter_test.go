@@ -8,35 +8,152 @@ import (
 	"github.com/hayashi-yaken/daily-paper-bot/internal/openreview"
 )
 
-func TestFormatters(t *testing.T) {
+func TestFormatters_HeaderLinkPointsToPaper(t *testing.T) {
 	paper := &openreview.Note{
-		ID: "testID123",
+		ID: "ABC123",
 		Content: openreview.NoteContent{
-			Title:   openreview.ValueField[string]{Value: "Test Title"},
-			Authors: openreview.ValueField[[]string]{Value: []string{"Author A", "Author B"}},
+			Title:   openreview.ValueField[string]{Value: "T"},
+			Authors: openreview.ValueField[[]string]{Value: []string{"A"}},
 		},
 	}
-	venue := config.VenueConfig{
-		Name:  "ICLR",
-		Venue: "ICLR.cc/2025/Conference",
-		Year:  2025,
+	venue := config.VenueConfig{Name: "ICLR", Venue: "ICLR.cc/2025/Conference", Year: 2025}
+
+	t.Run("Slack header links to forum page", func(t *testing.T) {
+		msg := NewSlackFormatter().Format(paper, venue, 100, "")
+		wantLink := "<https://openreview.net/forum?id=ABC123|📄 今日の論文 (ICLR 2025)>"
+		if !strings.Contains(msg.Main, wantLink) {
+			t.Errorf("Slack header link wrong.\nGot: %s\nWant contains: %s", msg.Main, wantLink)
+		}
+	})
+
+	t.Run("Discord header links to forum page", func(t *testing.T) {
+		msg := NewDiscordFormatter().Format(paper, venue, 100, "")
+		wantLink := "[📄 今日の論文 (ICLR 2025)](https://openreview.net/forum?id=ABC123)"
+		if !strings.Contains(msg.Main, wantLink) {
+			t.Errorf("Discord header link wrong.\nGot: %s\nWant contains: %s", msg.Main, wantLink)
+		}
+	})
+}
+
+func TestFormatters_PDFLine(t *testing.T) {
+	venue := config.VenueConfig{Name: "ICLR", Venue: "ICLR.cc/2025/Conference", Year: 2025}
+
+	t.Run("Slack with PDF shows *PDF* line", func(t *testing.T) {
+		paper := &openreview.Note{
+			ID: "PID",
+			Content: openreview.NoteContent{
+				Title:   openreview.ValueField[string]{Value: "T"},
+				Authors: openreview.ValueField[[]string]{Value: []string{"A"}},
+				PDF:     openreview.ValueField[string]{Value: "/pdf?id=PID"},
+			},
+		}
+		msg := NewSlackFormatter().Format(paper, venue, 100, "")
+		if !strings.Contains(msg.Main, "*PDF*: https://openreview.net/pdf?id=PID") {
+			t.Errorf("expected Slack output to contain '*PDF*: ...'.\nGot: %s", msg.Main)
+		}
+		if strings.Contains(msg.Main, "*Link*:") {
+			t.Errorf("expected Slack output not to contain legacy '*Link*:'.\nGot: %s", msg.Main)
+		}
+	})
+
+	t.Run("Slack without PDF omits link line", func(t *testing.T) {
+		paper := &openreview.Note{
+			ID: "PID",
+			Content: openreview.NoteContent{
+				Title:   openreview.ValueField[string]{Value: "T"},
+				Authors: openreview.ValueField[[]string]{Value: []string{"A"}},
+			},
+		}
+		msg := NewSlackFormatter().Format(paper, venue, 100, "")
+		if strings.Contains(msg.Main, "*PDF*:") {
+			t.Errorf("expected no *PDF*: line when PDF is missing.\nGot: %s", msg.Main)
+		}
+		if strings.Contains(msg.Main, "*Link*:") {
+			t.Errorf("expected no legacy *Link*: line.\nGot: %s", msg.Main)
+		}
+	})
+
+	t.Run("Discord with PDF shows *PDF* line", func(t *testing.T) {
+		paper := &openreview.Note{
+			ID: "PID",
+			Content: openreview.NoteContent{
+				Title:   openreview.ValueField[string]{Value: "T"},
+				Authors: openreview.ValueField[[]string]{Value: []string{"A"}},
+				PDF:     openreview.ValueField[string]{Value: "/pdf?id=PID"},
+			},
+		}
+		msg := NewDiscordFormatter().Format(paper, venue, 100, "")
+		if !strings.Contains(msg.Main, "*PDF*: https://openreview.net/pdf?id=PID") {
+			t.Errorf("expected Discord output to contain '*PDF*: ...'.\nGot: %s", msg.Main)
+		}
+	})
+}
+
+func TestSlackFormatter_WithTranslation(t *testing.T) {
+	paper := &openreview.Note{
+		ID: "PID",
+		Content: openreview.NoteContent{
+			Title:    openreview.ValueField[string]{Value: "T"},
+			Authors:  openreview.ValueField[[]string]{Value: []string{"A"}},
+			Abstract: openreview.ValueField[string]{Value: "english abstract"},
+		},
 	}
+	venue := config.VenueConfig{Name: "ICLR", Venue: "ICLR.cc/2025/Conference", Year: 2025}
 
-	t.Run("DiscordFormatter", func(t *testing.T) {
-		formatter := NewDiscordFormatter()
-		formatted := formatter.Format(paper, venue, 100)
-		expectedLink := "[📄 今日の論文 (ICLR 2025)](https://openreview.net/group?id=ICLR.cc/2025/Conference)"
-		if !strings.Contains(formatted, expectedLink) {
-			t.Errorf("Discord link format is incorrect.\nGot: %s\nExpected to contain: %s", formatted, expectedLink)
-		}
-	})
+	msg := NewSlackFormatter().Format(paper, venue, 100, "日本語訳テスト")
 
-	t.Run("SlackFormatter", func(t *testing.T) {
-		formatter := NewSlackFormatter()
-		formatted := formatter.Format(paper, venue, 100)
-		expectedLink := "<https://openreview.net/group?id=ICLR.cc/2025/Conference|📄 今日の論文 (ICLR 2025)>"
-		if !strings.Contains(formatted, expectedLink) {
-			t.Errorf("Slack link format is incorrect.\nGot: %s\nExpected to contain: %s", formatted, expectedLink)
-		}
-	})
+	if !strings.Contains(msg.Main, "*Abstract (日本語)*:\n日本語訳テスト") {
+		t.Errorf("expected Main to contain Japanese abstract heading.\nGot: %s", msg.Main)
+	}
+	if strings.Contains(msg.Main, "english abstract") {
+		t.Errorf("expected Main not to contain original abstract when translated.\nGot: %s", msg.Main)
+	}
+	if !strings.Contains(msg.Sub, "*Original Abstract*:\nenglish abstract") {
+		t.Errorf("expected Sub to contain original abstract block.\nGot: %s", msg.Sub)
+	}
+}
+
+func TestDiscordFormatter_WithTranslation(t *testing.T) {
+	paper := &openreview.Note{
+		ID: "PID",
+		Content: openreview.NoteContent{
+			Title:    openreview.ValueField[string]{Value: "T"},
+			Authors:  openreview.ValueField[[]string]{Value: []string{"A"}},
+			Abstract: openreview.ValueField[string]{Value: "english abstract"},
+		},
+	}
+	venue := config.VenueConfig{Name: "ICLR", Venue: "ICLR.cc/2025/Conference", Year: 2025}
+
+	msg := NewDiscordFormatter().Format(paper, venue, 100, "日本語訳テスト")
+
+	if !strings.Contains(msg.Main, "*Abstract (日本語)*:\n日本語訳テスト") {
+		t.Errorf("expected Main to contain Japanese abstract heading.\nGot: %s", msg.Main)
+	}
+	if !strings.Contains(msg.Main, "*Original Abstract*:\n||english abstract||") {
+		t.Errorf("expected Main to contain spoilered original abstract.\nGot: %s", msg.Main)
+	}
+	if msg.Sub != "" {
+		t.Errorf("Discord Sub must remain empty, got %q", msg.Sub)
+	}
+}
+
+func TestSlackFormatter_WithoutTranslation_LegacyHeading(t *testing.T) {
+	paper := &openreview.Note{
+		ID: "PID",
+		Content: openreview.NoteContent{
+			Title:    openreview.ValueField[string]{Value: "T"},
+			Authors:  openreview.ValueField[[]string]{Value: []string{"A"}},
+			Abstract: openreview.ValueField[string]{Value: "english abstract"},
+		},
+	}
+	venue := config.VenueConfig{Name: "ICLR", Venue: "ICLR.cc/2025/Conference", Year: 2025}
+
+	msg := NewSlackFormatter().Format(paper, venue, 100, "")
+
+	if !strings.Contains(msg.Main, "*Abstract*:\nenglish abstract") {
+		t.Errorf("expected Main to show original abstract under *Abstract*: when no translation.\nGot: %s", msg.Main)
+	}
+	if msg.Sub != "" {
+		t.Errorf("expected empty Sub when no translation, got %q", msg.Sub)
+	}
 }

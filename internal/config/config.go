@@ -42,6 +42,12 @@ type Config struct {
 	// OpenReview Auth (optional)
 	OpenReviewEmail    string
 	OpenReviewPassword string
+
+	// Translation
+	TranslateEnabled        bool
+	AzureTranslatorEndpoint string
+	AzureTranslatorRegion   string
+	AzureTranslatorKey      string
 }
 
 // Load は環境変数と設定ファイルから設定を読み込み、検証します。
@@ -122,6 +128,30 @@ func Load() (*Config, error) {
 
 	cfg.OpenReviewEmail = os.Getenv("OR_EMAIL")
 	cfg.OpenReviewPassword = os.Getenv("OR_PASSWORD")
+
+	// Translation
+	translateEnabledStr := os.Getenv("TRANSLATE_ENABLED")
+	if translateEnabledStr == "" {
+		cfg.TranslateEnabled = false
+	} else {
+		cfg.TranslateEnabled, err = strconv.ParseBool(translateEnabledStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse TRANSLATE_ENABLED: %w", err)
+		}
+	}
+
+	cfg.AzureTranslatorEndpoint = os.Getenv("AZURE_TRANSLATOR_ENDPOINT")
+	if cfg.AzureTranslatorEndpoint == "" {
+		cfg.AzureTranslatorEndpoint = "https://api.cognitive.microsofttranslator.com"
+	}
+	cfg.AzureTranslatorRegion = os.Getenv("AZURE_TRANSLATOR_REGION")
+	cfg.AzureTranslatorKey = os.Getenv("AZURE_TRANSLATOR_KEY")
+
+	if cfg.TranslateEnabled {
+		if cfg.AzureTranslatorKey == "" || cfg.AzureTranslatorRegion == "" {
+			return nil, fmt.Errorf("AZURE_TRANSLATOR_KEY and AZURE_TRANSLATOR_REGION are required when TRANSLATE_ENABLED=true")
+		}
+	}
 
 	return cfg, nil
 }

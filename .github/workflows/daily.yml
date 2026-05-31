@@ -34,4 +34,8 @@ jobs:
           CUSTOM_USER_AGENT: ${{ secrets.CUSTOM_USER_AGENT }} # 任意
           OR_EMAIL: ${{ secrets.OR_EMAIL }}
           OR_PASSWORD: ${{ secrets.OR_PASSWORD }}
+          TRANSLATE_ENABLED: ${{ secrets.TRANSLATE_ENABLED }}
+          AZURE_TRANSLATOR_KEY: ${{ secrets.AZURE_TRANSLATOR_KEY }}
+          AZURE_TRANSLATOR_REGION: ${{ secrets.AZURE_TRANSLATOR_REGION }}
+          AZURE_TRANSLATOR_ENDPOINT: ${{ secrets.AZURE_TRANSLATOR_ENDPOINT }} # 任意（未設定時はデフォルト）
         run: go run ./cmd/dailybot

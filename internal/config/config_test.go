@@ -136,3 +136,119 @@ func TestLoad_WithOpenReviewCredentials(t *testing.T) {
 		}
 	})
 }
+
+func TestLoad_WithTranslator(t *testing.T) {
+	jsonContent := `[{"name":"ICLR","venue":"ICLR.cc/2025/Conference","year":2025}]`
+
+	setBasicEnv := func() {
+		os.Setenv("TARGET_PLATFORM", "slack")
+		os.Setenv("SLACK_BOT_TOKEN", "test_token")
+		os.Setenv("SLACK_CHANNEL_ID", "test_channel")
+	}
+	unsetBasicEnv := func() {
+		os.Unsetenv("TARGET_PLATFORM")
+		os.Unsetenv("SLACK_BOT_TOKEN")
+		os.Unsetenv("SLACK_CHANNEL_ID")
+	}
+	unsetTranslatorEnv := func() {
+		os.Unsetenv("TRANSLATE_ENABLED")
+		os.Unsetenv("AZURE_TRANSLATOR_KEY")
+		os.Unsetenv("AZURE_TRANSLATOR_REGION")
+		os.Unsetenv("AZURE_TRANSLATOR_ENDPOINT")
+	}
+
+	t.Run("enabled but key missing fails", func(t *testing.T) {
+		cleanup := setupTestConfigFile(t, jsonContent)
+		defer cleanup()
+		setBasicEnv()
+		defer unsetBasicEnv()
+		os.Setenv("TRANSLATE_ENABLED", "true")
+		os.Setenv("AZURE_TRANSLATOR_REGION", "japaneast")
+		os.Unsetenv("AZURE_TRANSLATOR_KEY")
+		defer unsetTranslatorEnv()
+
+		if _, err := Load(); err == nil {
+			t.Fatal("expected error when TRANSLATE_ENABLED=true but AZURE_TRANSLATOR_KEY is missing")
+		}
+	})
+
+	t.Run("enabled but region missing fails", func(t *testing.T) {
+		cleanup := setupTestConfigFile(t, jsonContent)
+		defer cleanup()
+		setBasicEnv()
+		defer unsetBasicEnv()
+		os.Setenv("TRANSLATE_ENABLED", "true")
+		os.Setenv("AZURE_TRANSLATOR_KEY", "k")
+		os.Unsetenv("AZURE_TRANSLATOR_REGION")
+		defer unsetTranslatorEnv()
+
+		if _, err := Load(); err == nil {
+			t.Fatal("expected error when TRANSLATE_ENABLED=true but AZURE_TRANSLATOR_REGION is missing")
+		}
+	})
+
+	t.Run("enabled with all required env succeeds", func(t *testing.T) {
+		cleanup := setupTestConfigFile(t, jsonContent)
+		defer cleanup()
+		setBasicEnv()
+		defer unsetBasicEnv()
+		os.Setenv("TRANSLATE_ENABLED", "true")
+		os.Setenv("AZURE_TRANSLATOR_KEY", "secret-key")
+		os.Setenv("AZURE_TRANSLATOR_REGION", "japaneast")
+		defer unsetTranslatorEnv()
+
+		cfg, err := Load()
+		if err != nil {
+			t.Fatalf("Load() failed: %v", err)
+		}
+		if !cfg.TranslateEnabled {
+			t.Errorf("expected TranslateEnabled=true")
+		}
+		if cfg.AzureTranslatorKey != "secret-key" {
+			t.Errorf("expected key 'secret-key', got %q", cfg.AzureTranslatorKey)
+		}
+		if cfg.AzureTranslatorRegion != "japaneast" {
+			t.Errorf("expected region 'japaneast', got %q", cfg.AzureTranslatorRegion)
+		}
+		if cfg.AzureTranslatorEndpoint != "https://api.cognitive.microsofttranslator.com" {
+			t.Errorf("expected default endpoint, got %q", cfg.AzureTranslatorEndpoint)
+		}
+	})
+
+	t.Run("custom endpoint is respected", func(t *testing.T) {
+		cleanup := setupTestConfigFile(t, jsonContent)
+		defer cleanup()
+		setBasicEnv()
+		defer unsetBasicEnv()
+		os.Setenv("TRANSLATE_ENABLED", "true")
+		os.Setenv("AZURE_TRANSLATOR_KEY", "k")
+		os.Setenv("AZURE_TRANSLATOR_REGION", "japaneast")
+		os.Setenv("AZURE_TRANSLATOR_ENDPOINT", "https://custom.example.com/translator")
+		defer unsetTranslatorEnv()
+
+		cfg, err := Load()
+		if err != nil {
+			t.Fatalf("Load() failed: %v", err)
+		}
+		if cfg.AzureTranslatorEndpoint != "https://custom.example.com/translator" {
+			t.Errorf("expected custom endpoint 'https://custom.example.com/translator', got %q", cfg.AzureTranslatorEndpoint)
+		}
+	})
+
+	t.Run("disabled passes through without keys", func(t *testing.T) {
+		cleanup := setupTestConfigFile(t, jsonContent)
+		defer cleanup()
+		setBasicEnv()
+		defer unsetBasicEnv()
+		unsetTranslatorEnv()
+		defer unsetTranslatorEnv()
+
+		cfg, err := Load()
+		if err != nil {
+			t.Fatalf("Load() failed: %v", err)
+		}
+		if cfg.TranslateEnabled {
+			t.Errorf("expected TranslateEnabled=false")
+		}
+	})
+}

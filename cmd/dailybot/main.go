@@ -10,6 +10,7 @@ import (
 	"github.com/hayashi-yaken/daily-paper-bot/internal/notifier"
 	"github.com/hayashi-yaken/daily-paper-bot/internal/openreview"
 	"github.com/hayashi-yaken/daily-paper-bot/internal/selector"
+	"github.com/hayashi-yaken/daily-paper-bot/internal/translator"
 	"github.com/hayashi-yaken/daily-paper-bot/internal/venueselector"
 	"github.com/joho/godotenv"
 )
@@ -98,13 +99,35 @@ func run() error {
 	}
 	log.Printf("[DEBUG] Raw content from API: %+v", selectedNote.Content)
 
+	// 5.5. アブストラクトの翻訳（任意）
+	var jaAbstract string
+	if cfg.TranslateEnabled {
+		tr := translator.NewAzureTranslator(
+			cfg.AzureTranslatorEndpoint,
+			cfg.AzureTranslatorRegion,
+			cfg.AzureTranslatorKey,
+		)
+		translated, err := tr.Translate(selectedNote.Content.Abstract.Value, "ja")
+		if err != nil {
+			log.Printf("WARN: translation failed, falling back to original abstract only: %v", err)
+		} else {
+			jaAbstract = translated
+			log.Printf("INFO: Translated abstract (len=%d chars).", len([]rune(jaAbstract)))
+		}
+	} else {
+		log.Println("INFO: Translation disabled.")
+	}
+
 	// 6. 投稿メッセージを生成
-	message := paperFormatter.Format(selectedNote, selectedVenue, cfg.AbstractMaxChars)
+	message := paperFormatter.Format(selectedNote, selectedVenue, cfg.AbstractMaxChars, jaAbstract)
 
 	// 7. DryRun または 投稿
 	if cfg.DryRun {
 		log.Println("INFO: Dry run mode is enabled. Skipping post.")
-		log.Printf("--- Message to be posted ---\n%s\n--------------------------", message)
+		log.Printf("--- Main ---\n%s\n------------", message.Main)
+		if message.Sub != "" {
+			log.Printf("--- Sub (thread) ---\n%s\n--------------------", message.Sub)
+		}
 		return nil
 	}
 
