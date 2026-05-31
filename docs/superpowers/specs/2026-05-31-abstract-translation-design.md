@@ -1,8 +1,8 @@
 # Abstract 翻訳表示（Azure AI Translator）設計書
 
 **作成日:** 2026-05-31
-**ステータス:** ドラフト
-**対象ブランチ:** （未定）
+**ステータス:** 実装済み
+**対象ブランチ:** docs/dpb-014-abstract-translation
 
 ---
 
