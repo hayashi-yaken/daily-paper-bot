@@ -35,8 +35,11 @@ func (f *discordFormatter) Format(paper *openreview.Note, venue config.VenueConf
 	headerText := fmt.Sprintf("📄 今日の論文 (%s %d)", venue.Name, venue.Year)
 	header := fmt.Sprintf("[%s](%s)", headerText, paperLink)
 
-	main := formatMessage(paper, header, abstractBlock(paper.Content.Abstract.Value, jaAbstract, abstractMaxChars))
-	return Message{Main: main}
+	abs := abstractBlock(paper.Content.Abstract.Value, jaAbstract, abstractMaxChars)
+	if jaAbstract != "" {
+		abs += fmt.Sprintf("\n\n*Original Abstract*:\n||%s||", truncateRunes(paper.Content.Abstract.Value, abstractMaxChars))
+	}
+	return Message{Main: formatMessage(paper, header, abs)}
 }
 
 // --- Slack Formatter (Slack Mrkdwn) ---

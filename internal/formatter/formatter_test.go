@@ -113,6 +113,30 @@ func TestSlackFormatter_WithTranslation(t *testing.T) {
 	}
 }
 
+func TestDiscordFormatter_WithTranslation(t *testing.T) {
+	paper := &openreview.Note{
+		ID: "PID",
+		Content: openreview.NoteContent{
+			Title:    openreview.ValueField[string]{Value: "T"},
+			Authors:  openreview.ValueField[[]string]{Value: []string{"A"}},
+			Abstract: openreview.ValueField[string]{Value: "english abstract"},
+		},
+	}
+	venue := config.VenueConfig{Name: "ICLR", Venue: "ICLR.cc/2025/Conference", Year: 2025}
+
+	msg := NewDiscordFormatter().Format(paper, venue, 100, "日本語訳テスト")
+
+	if !strings.Contains(msg.Main, "*Abstract (日本語)*:\n日本語訳テスト") {
+		t.Errorf("expected Main to contain Japanese abstract heading.\nGot: %s", msg.Main)
+	}
+	if !strings.Contains(msg.Main, "*Original Abstract*:\n||english abstract||") {
+		t.Errorf("expected Main to contain spoilered original abstract.\nGot: %s", msg.Main)
+	}
+	if msg.Sub != "" {
+		t.Errorf("Discord Sub must remain empty, got %q", msg.Sub)
+	}
+}
+
 func TestSlackFormatter_WithoutTranslation_LegacyHeading(t *testing.T) {
 	paper := &openreview.Note{
 		ID: "PID",
