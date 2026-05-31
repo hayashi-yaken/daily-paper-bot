@@ -27,6 +27,7 @@
   - `selector/`: 候補リストから論文を1本選定するロジック。
   - `formatter/`: 論文情報を投稿用のメッセージ文字列に整形。
   - `notifier/`: SlackまたはDiscordへメッセージを送信する処理。
+  - `translator/`: Azure AI Translator を用いた Abstract の翻訳処理。
 - `assets/`: 設定データなど、静的な資産を格納します。
   - `venues.json`: 対象となる学会のリストを定義する設定ファイル。
 - `docs/`: ドキュメント類を格納します。
@@ -94,6 +95,10 @@ go test -tags=integration ./... -v
 - **`ABSTRACT_MAX_CHARS`**: (任意) Abstractの最大文字数。デフォルトは `1200`。
 - **`DRY_RUN`**: (任意) `true` の場合、Botは投稿を行いません。
 - **`CUSTOM_USER_AGENT`**: (任意) OpenReview APIへのリクエスト時に使用するUser-Agent。
+- **`TRANSLATE_ENABLED`**: (任意) `true` で Azure AI Translator による日本語訳を有効化。デフォルト `false`。
+- **`AZURE_TRANSLATOR_KEY`**: (Secret, `TRANSLATE_ENABLED=true` のとき必須) Translator のサブスクリプションキー。
+- **`AZURE_TRANSLATOR_REGION`**: (Secret, `TRANSLATE_ENABLED=true` のとき必須) Translator リソースのリージョン (例: `japaneast`)。
+- **`AZURE_TRANSLATOR_ENDPOINT`**: (任意) Translator エンドポイント。通常はデフォルトで OK。
 
 ## 6. デプロイ
 
