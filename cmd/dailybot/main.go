@@ -99,17 +99,17 @@ func run() error {
 	log.Printf("[DEBUG] Raw content from API: %+v", selectedNote.Content)
 
 	// 6. 投稿メッセージを生成
-	message := paperFormatter.Format(selectedNote, selectedVenue, cfg.AbstractMaxChars)
+	message := paperFormatter.Format(selectedNote, selectedVenue, cfg.AbstractMaxChars, "")
 
 	// 7. DryRun または 投稿
 	if cfg.DryRun {
 		log.Println("INFO: Dry run mode is enabled. Skipping post.")
-		log.Printf("--- Message to be posted ---\n%s\n--------------------------", message)
+		log.Printf("--- Message to be posted ---\n%s\n--------------------------", message.Main)
 		return nil
 	}
 
 	log.Printf("INFO: Posting to %s...", cfg.TargetPlatform)
-	if err := paperNotifier.Post(message); err != nil {
+	if err := paperNotifier.Post(message.Main); err != nil {
 		return fmt.Errorf("failed to post notification: %w", err)
 	}
 	log.Println("INFO: Post successful.")
