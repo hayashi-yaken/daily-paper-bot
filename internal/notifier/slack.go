@@ -2,6 +2,7 @@ package notifier
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/hayashi-yaken/daily-paper-bot/internal/formatter"
 	"github.com/slack-go/slack"
@@ -29,13 +30,26 @@ func NewSlackNotifier(botToken, channelID string) *SlackNotifier {
 
 // Post は指定されたメッセージをSlackチャンネルに投稿します。
 func (n *SlackNotifier) Post(msg formatter.Message) error {
-	_, _, err := n.poster.PostMessage(
+	_, parentTS, err := n.poster.PostMessage(
 		n.channelID,
 		slack.MsgOptionText(msg.Main, false),
 		slack.MsgOptionAsUser(true),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to post message to slack: %w", err)
+	}
+
+	if msg.Sub == "" {
+		return nil
+	}
+
+	if _, _, threadErr := n.poster.PostMessage(
+		n.channelID,
+		slack.MsgOptionText(msg.Sub, false),
+		slack.MsgOptionAsUser(true),
+		slack.MsgOptionTS(parentTS),
+	); threadErr != nil {
+		log.Printf("WARN: failed to post thread reply to slack (parent succeeded): %v", threadErr)
 	}
 	return nil
 }
