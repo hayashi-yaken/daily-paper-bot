@@ -112,4 +112,15 @@ func TestAzureTranslator_Translate(t *testing.T) {
 			t.Fatal("expected error for empty top-level array")
 		}
 	})
+
+	t.Run("network error returns error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		server.Close() // closed before call so connection is refused
+
+		tr := NewAzureTranslator(server.URL, "japaneast", "k")
+		_, err := tr.Translate("hello", "ja")
+		if err == nil {
+			t.Fatal("expected error for connection refused")
+		}
+	})
 }
