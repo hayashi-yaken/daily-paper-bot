@@ -8,61 +8,64 @@ import (
 	"github.com/hayashi-yaken/daily-paper-bot/internal/openreview"
 )
 
-// Formatter は論文情報を文字列に整形するインターフェースです。
+// Message は投稿メッセージのペアを表します。
+// Main は親メッセージ（または単発メッセージ）、Sub は Slack スレッド子用の補助メッセージ。
+// Discord は Sub を無視します。
+type Message struct {
+	Main string
+	Sub  string
+}
+
+// Formatter は論文情報をプラットフォーム別のメッセージに整形するインターフェースです。
 type Formatter interface {
-	Format(paper *openreview.Note, venue config.VenueConfig, abstractMaxChars int) string
+	Format(paper *openreview.Note, venue config.VenueConfig, abstractMaxChars int, jaAbstract string) Message
 }
 
 // --- Discord Formatter (Standard Markdown) ---
 
 type discordFormatter struct{}
 
-// NewDiscordFormatter はDiscord用のFormatterを生成します。
+// NewDiscordFormatter は Discord 用の Formatter を返します。
 func NewDiscordFormatter() Formatter {
 	return &discordFormatter{}
 }
 
-func (f *discordFormatter) Format(paper *openreview.Note, venue config.VenueConfig, abstractMaxChars int) string {
-	// ヘッダー部分を生成
+func (f *discordFormatter) Format(paper *openreview.Note, venue config.VenueConfig, abstractMaxChars int, jaAbstract string) Message {
 	venueLink := fmt.Sprintf("https://openreview.net/group?id=%s", venue.Venue)
 	headerText := fmt.Sprintf("📄 今日の論文 (%s %d)", venue.Name, venue.Year)
 	header := fmt.Sprintf("[%s](%s)", headerText, venueLink)
-
-	return formatMessage(paper, header, abstractMaxChars)
+	return Message{Main: formatMessage(paper, header, abstractMaxChars)}
 }
 
 // --- Slack Formatter (Slack Mrkdwn) ---
 
 type slackFormatter struct{}
 
-// NewSlackFormatter はSlack用のFormatterを生成します。
+// NewSlackFormatter は Slack 用の Formatter を返します。
 func NewSlackFormatter() Formatter {
 	return &slackFormatter{}
 }
 
-func (f *slackFormatter) Format(paper *openreview.Note, venue config.VenueConfig, abstractMaxChars int) string {
-	// ヘッダー部分を生成
+func (f *slackFormatter) Format(paper *openreview.Note, venue config.VenueConfig, abstractMaxChars int, jaAbstract string) Message {
 	venueLink := fmt.Sprintf("https://openreview.net/group?id=%s", venue.Venue)
 	headerText := fmt.Sprintf("📄 今日の論文 (%s %d)", venue.Name, venue.Year)
-	header := fmt.Sprintf("<%s|%s>", venueLink, headerText) // Slack形式のリンク
-
-	return formatMessage(paper, header, abstractMaxChars)
+	header := fmt.Sprintf("<%s|%s>", venueLink, headerText)
+	return Message{Main: formatMessage(paper, header, abstractMaxChars)}
 }
 
 // --- Helper Function ---
 
-// formatMessage は共通のメッセージ本文を組み立てます。
-func formatMessage(paper *openreview.Note, header string, abstractMaxChars int) string {
-	// Abstractを指定文字数で切り詰める
-	abstract := paper.Content.Abstract.Value
-	if abstractMaxChars > 0 && len([]rune(abstract)) > abstractMaxChars {
-		abstract = string([]rune(abstract)[:abstractMaxChars]) + "..."
+func truncateRunes(s string, max int) string {
+	if max <= 0 || len([]rune(s)) <= max {
+		return s
 	}
+	return string([]rune(s)[:max]) + "..."
+}
 
-	// 著者リストをカンマ区切りの文字列にする
+func formatMessage(paper *openreview.Note, header string, abstractMaxChars int) string {
+	abstract := truncateRunes(paper.Content.Abstract.Value, abstractMaxChars)
 	authors := strings.Join(paper.Content.Authors.Value, ", ")
 
-	// PDFのリンクを生成する
 	var link string
 	pdfPath := paper.Content.PDF.Value
 	if pdfPath != "" {
@@ -75,7 +78,6 @@ func formatMessage(paper *openreview.Note, header string, abstractMaxChars int) 
 		link = fmt.Sprintf("https://openreview.net/forum?id=%s", paper.ID)
 	}
 
-	// メッセージを組み立てる
 	return fmt.Sprintf(
 		"%s\n\n*Title*: %s\n*Authors*: %s\n\n*Abstract*:\n%s\n\n*Link*:\n%s\n\nID: `%s`",
 		header,
