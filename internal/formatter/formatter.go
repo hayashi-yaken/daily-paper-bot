@@ -31,9 +31,9 @@ func NewDiscordFormatter() Formatter {
 }
 
 func (f *discordFormatter) Format(paper *openreview.Note, venue config.VenueConfig, abstractMaxChars int, jaAbstract string) Message {
-	venueLink := fmt.Sprintf("https://openreview.net/group?id=%s", venue.Venue)
+	paperLink := fmt.Sprintf("https://openreview.net/forum?id=%s", paper.ID)
 	headerText := fmt.Sprintf("📄 今日の論文 (%s %d)", venue.Name, venue.Year)
-	header := fmt.Sprintf("[%s](%s)", headerText, venueLink)
+	header := fmt.Sprintf("[%s](%s)", headerText, paperLink)
 	return Message{Main: formatMessage(paper, header, abstractMaxChars)}
 }
 
@@ -47,9 +47,9 @@ func NewSlackFormatter() Formatter {
 }
 
 func (f *slackFormatter) Format(paper *openreview.Note, venue config.VenueConfig, abstractMaxChars int, jaAbstract string) Message {
-	venueLink := fmt.Sprintf("https://openreview.net/group?id=%s", venue.Venue)
+	paperLink := fmt.Sprintf("https://openreview.net/forum?id=%s", paper.ID)
 	headerText := fmt.Sprintf("📄 今日の論文 (%s %d)", venue.Name, venue.Year)
-	header := fmt.Sprintf("<%s|%s>", venueLink, headerText)
+	header := fmt.Sprintf("<%s|%s>", paperLink, headerText)
 	return Message{Main: formatMessage(paper, header, abstractMaxChars)}
 }
 
