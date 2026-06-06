@@ -102,9 +102,11 @@ go test -tags=integration ./... -v
 
 ## 6. デプロイ
 
-- デプロイは `.github/workflows/daily.yml` に定義されたGitHub Actionsによって完全に処理されます。
-- ワークフローは毎日定刻に実行 (`cron`) されるほか、手動での実行 (`workflow_dispatch`) も可能です。
-- 全てのシークレットは、リポジトリの「Settings > Secrets and variables > Actions」で設定する必要があります。
+- デプロイは `.github/workflows/daily.yml` に定義された GitHub Actions によって完全に処理されます。
+- 定時起動は **プライマリ: Google Apps Script の時間トリガー → `workflow_dispatch` で `daily.yml` を起動 (JST 08:00)** という構成です。GAS にコピペするためのスクリプトは `scripts/gas/trigger.gs` を参照してください。
+- フォールバックとして `schedule:` の cron が `0 4 * * *` (UTC 04:00 = JST 13:00 狙い) で残してあり、GAS が止まった日でも遅延込みで午後には投稿が来るようになっています。
+- 手動実行は GitHub UI 上で `workflow_dispatch` から起動できます。
+- Bot 本体のシークレットは、リポジトリの「Settings > Secrets and variables > Actions」で設定します。GAS 側で使う秘密情報 (`GITHUB_PAT` / `SLACK_WEBHOOK_URL`) は GAS の Script Properties で個別に管理します。
 
 ## 7. 作業プロトコル (Working Protocol)
 
