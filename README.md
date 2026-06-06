@@ -106,7 +106,7 @@ go run ./cmd/dailybot
    - `Project Settings → General settings → Time zone` を `Asia/Tokyo` に変更
 6. **時間トリガーを登録する**
    - `Triggers → Add Trigger`
-   - Function: `trigger`、Event source: 時間主導型、Type: 日付ベースのタイマー、Hour: 午前 8 時 〜 9 時
+   - Function: `trigger`、Deployment: `Head`、Event source: 時間主導型、Type: 日付ベースのタイマー、Hour: 午前 8 時 〜 9 時
 7. **動作確認**
    - GAS エディタから `trigger` を手動実行 → `Actions` タブで `Daily Paper Bot` Run が起動することを確認
    - 数分以内に Slack の投稿チャンネルへ論文が投稿されることを確認
