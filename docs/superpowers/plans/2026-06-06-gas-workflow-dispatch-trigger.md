@@ -75,7 +75,10 @@ Expected: ディレクトリが無ければ `scripts directory does not exist`�
 
 const REPO = 'hayashi-yaken/daily-paper-bot';
 const WORKFLOW_FILE = 'daily.yml';
-const REF = 'main';
+// Dispatch against the repository's default branch (currently `develop`),
+// which is the branch the scheduled `daily.yml` already runs on. If the
+// default branch changes on GitHub, update this to match.
+const REF = 'develop';
 
 function trigger() {
   const props = PropertiesService.getScriptProperties();
