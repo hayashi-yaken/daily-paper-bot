@@ -9,7 +9,7 @@
 ## 2. 技術スタック
 
 - **言語**: Go
-- **実行環境**: GitHub Actions (cronによる定期実行)
+- **実行環境**: GitHub Actions (GAS からの `workflow_dispatch` がプライマリ、cron は JST 13:00 のフォールバック)
 - **主要な外部ライブラリ**:
   - `slack-go/slack` (Slack通知用)
   - `github.com/joho/godotenv` (.envファイル読み込み用)
