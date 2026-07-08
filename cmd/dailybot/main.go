@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/hayashi-yaken/daily-paper-bot/internal/config"
 	"github.com/hayashi-yaken/daily-paper-bot/internal/formatter"
@@ -14,6 +16,19 @@ import (
 	"github.com/hayashi-yaken/daily-paper-bot/internal/venueselector"
 	"github.com/joho/godotenv"
 )
+
+// noteWindowSize は一度に取得する論文数です。ランダムなoffsetからこの件数の窓を
+// 取得してselectorに渡すことで、無効データ（タイトル欠損など）が混ざっていても
+// リトライなしで選定できるようにします。
+const noteWindowSize = 20
+
+// randomWindowOffset は [0, max(0, count-window)] の範囲からランダムなoffsetを返します。
+func randomWindowOffset(count, window int, r *rand.Rand) int {
+	if count <= window {
+		return 0
+	}
+	return r.Intn(count - window + 1)
+}
 
 func main() {
 	// .envファイルを読み込む（ファイルが存在しなくてもエラーにはならない）
@@ -67,13 +82,25 @@ func run() error {
 		return fmt.Errorf("invalid target platform: %s", cfg.TargetPlatform)
 	}
 
-	// 4. OpenReviewから論文一覧を取得
-	log.Printf("INFO: Fetching papers from OpenReview (Venue: %s)...", selectedVenue.Venue)
-	notes, err := orClient.GetNotes(selectedVenue.Venue)
+	// 4. OpenReviewから採択論文を取得（件数取得 → ランダムなoffsetで窓取得の2段構え）
+	log.Printf("INFO: Fetching accepted paper count from OpenReview (Venue: %s)...", selectedVenue.Venue)
+	_, count, err := orClient.GetAcceptedNotes(selectedVenue.Venue, 1, 0)
+	if err != nil {
+		return fmt.Errorf("failed to get note count from openreview: %w", err)
+	}
+	log.Printf("INFO: Venue has %d accepted papers.", count)
+	if count == 0 {
+		log.Println("INFO: No accepted papers found for this venue. Nothing to post.")
+		return nil // 候補なしは正常終了
+	}
+
+	offsetRand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	offset := randomWindowOffset(count, noteWindowSize, offsetRand)
+	notes, _, err := orClient.GetAcceptedNotes(selectedVenue.Venue, noteWindowSize, offset)
 	if err != nil {
 		return fmt.Errorf("failed to get notes from openreview: %w", err)
 	}
-	log.Printf("INFO: Fetched %d papers.", len(notes))
+	log.Printf("INFO: Fetched %d papers (offset=%d).", len(notes), offset)
 
 	// 5. 論文を選定
 	papers := make([]selector.Paper, len(notes))

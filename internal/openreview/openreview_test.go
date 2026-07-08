@@ -8,10 +8,10 @@ import (
 	"testing"
 )
 
-// TestGetNotes_Integration は、実際のOpenReview APIにアクセスしてデータを取得する統合テストです。
+// TestGetAcceptedNotes_Integration は、実際のOpenReview APIにアクセスしてデータを取得する統合テストです。
 // このテストを実行するには、インターネット接続が必要です。
 // `go test -v -tags=integration` のようにビルドタグを使って、普段のユニットテストと分けて実行するのが一般的です。
-func TestGetNotes_Integration(t *testing.T) {
+func TestGetAcceptedNotes_Integration(t *testing.T) {
 	// CI環境など、特定の条件下でのみ実行したい場合
 	if os.Getenv("CI") == "" {
 		t.Skip("Skipping integration test; set CI environment variable to run.")
@@ -22,7 +22,7 @@ func TestGetNotes_Integration(t *testing.T) {
 
 		// ICLR 2024 のような、確実にデータが存在する過去のカンファレンスを対象とする
 		venue := "ICLR.cc/2024/Conference"
-		notes, err := client.GetNotes(venue)
+		notes, count, err := client.GetAcceptedNotes(venue, 5, 0)
 
 		if err != nil {
 			t.Fatalf("expected no error, but got: %v", err)
@@ -30,6 +30,9 @@ func TestGetNotes_Integration(t *testing.T) {
 
 		if len(notes) == 0 {
 			t.Fatalf("expected to fetch at least one note, but got 0")
+		}
+		if count < len(notes) {
+			t.Errorf("expected count (%d) to be >= number of fetched notes (%d)", count, len(notes))
 		}
 
 		// 最初の1件のデータが基本的なフィールドを持っているかを確認
@@ -41,8 +44,59 @@ func TestGetNotes_Integration(t *testing.T) {
 			t.Error("expected first note to have a title, but it was empty")
 		}
 
-		t.Logf("Successfully fetched %d notes. First note ID: %s, Title: %s", len(notes), firstNote.ID, firstNote.Content.Title.Value)
+		t.Logf("Successfully fetched %d notes (count=%d). First note ID: %s, Title: %s", len(notes), count, firstNote.ID, firstNote.Content.Title.Value)
 	})
+}
+
+func TestGetAcceptedNotes_QueryAndCount(t *testing.T) {
+	var capturedQuery map[string][]string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedQuery = r.URL.Query()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, `{"notes": [{"id": "n1", "content": {"title": {"value": "Paper 1"}}}, {"id": "n2", "content": {"title": {"value": "Paper 2"}}}], "count": 4567}`)
+	}))
+	defer server.Close()
+
+	client := NewClient("test-agent")
+	client.BaseURL = server.URL
+
+	notes, count, err := client.GetAcceptedNotes("ICLR.cc/2024/Conference", 20, 130)
+	if err != nil {
+		t.Fatalf("expected no error, but got: %v", err)
+	}
+
+	if got := capturedQuery["content.venueid"]; len(got) != 1 || got[0] != "ICLR.cc/2024/Conference" {
+		t.Errorf("expected content.venueid=ICLR.cc/2024/Conference, got %v", got)
+	}
+	if got := capturedQuery["limit"]; len(got) != 1 || got[0] != "20" {
+		t.Errorf("expected limit=20, got %v", got)
+	}
+	if got := capturedQuery["offset"]; len(got) != 1 || got[0] != "130" {
+		t.Errorf("expected offset=130, got %v", got)
+	}
+
+	if len(notes) != 2 {
+		t.Errorf("expected 2 notes, got %d", len(notes))
+	}
+	if count != 4567 {
+		t.Errorf("expected count 4567, got %d", count)
+	}
+}
+
+func TestGetAcceptedNotes_NonOKStatus(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer server.Close()
+
+	client := NewClient("test-agent")
+	client.BaseURL = server.URL
+
+	_, _, err := client.GetAcceptedNotes("ICLR.cc/2024/Conference", 1, 0)
+	if err == nil {
+		t.Fatal("expected an error, but got nil")
+	}
 }
 
 func TestLogin_Success(t *testing.T) {
@@ -103,7 +157,7 @@ func TestLogin_Failure_EmptyToken(t *testing.T) {
 	}
 }
 
-func TestGetNotes_WithAuthToken(t *testing.T) {
+func TestGetAcceptedNotes_WithAuthToken(t *testing.T) {
 	var capturedAuthHeader string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedAuthHeader = r.Header.Get("Authorization")
@@ -117,7 +171,7 @@ func TestGetNotes_WithAuthToken(t *testing.T) {
 	client.BaseURL = server.URL
 	client.token = "test-jwt-token"
 
-	_, err := client.GetNotes("TestVenue/Conference")
+	_, _, err := client.GetAcceptedNotes("TestVenue/Conference", 1, 0)
 	if err != nil {
 		t.Fatalf("expected no error, but got: %v", err)
 	}
@@ -126,7 +180,7 @@ func TestGetNotes_WithAuthToken(t *testing.T) {
 	}
 }
 
-func TestGetNotes_WithoutAuthToken(t *testing.T) {
+func TestGetAcceptedNotes_WithoutAuthToken(t *testing.T) {
 	var capturedAuthHeader string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedAuthHeader = r.Header.Get("Authorization")
@@ -140,7 +194,7 @@ func TestGetNotes_WithoutAuthToken(t *testing.T) {
 	client.BaseURL = server.URL
 	// token は空のまま（デフォルト）
 
-	_, err := client.GetNotes("TestVenue/Conference")
+	_, _, err := client.GetAcceptedNotes("TestVenue/Conference", 1, 0)
 	if err != nil {
 		t.Fatalf("expected no error, but got: %v", err)
 	}
