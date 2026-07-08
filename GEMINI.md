@@ -97,6 +97,8 @@ go test -tags=integration ./... -v
 - **`ABSTRACT_MAX_CHARS`**: (任意) Abstractの最大文字数。デフォルトは `1200`。
 - **`DRY_RUN`**: (任意) `true` の場合、Botは投稿を行いません。
 - **`CUSTOM_USER_AGENT`**: (任意) OpenReview APIへのリクエスト時に使用するUser-Agent。
+- **`OR_EMAIL`**: (任意・推奨) OpenReviewアカウントのメールアドレス。未認証アクセスはネットワークによってはbot対策 (403 ChallengeRequiredError) で弾かれるため、設定を推奨。
+- **`OR_PASSWORD`**: (Secret, `OR_EMAIL` とセットで必須) OpenReviewアカウントのパスワード。
 - **`TRANSLATE_ENABLED`**: (任意) `true` で Azure AI Translator による日本語訳を有効化。デフォルト `false`。
 - **`AZURE_TRANSLATOR_KEY`**: (Secret, `TRANSLATE_ENABLED=true` のとき必須) Translator のサブスクリプションキー。
 - **`AZURE_TRANSLATOR_REGION`**: (Secret, `TRANSLATE_ENABLED=true` のとき必須) Translator リソースのリージョン (例: `japaneast`)。

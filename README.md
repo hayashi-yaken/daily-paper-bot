@@ -51,6 +51,8 @@ cp .env.sample .env
 - `TARGET_PLATFORM` (`slack` または `discord`)
 - 通知先プラットフォームに応じた認証情報 (`SLACK_BOT_TOKEN`, `DISCORD_WEBHOOK_URL` など)
 
+また、OpenReview API は未認証アクセスがbot対策 (403) で弾かれることがあるため、`OR_EMAIL` / `OR_PASSWORD`(OpenReviewアカウントの認証情報)の設定を推奨します。
+
 #### Azure AI Translator（任意）
 
 Abstract を日本語訳して投稿に含めたい場合は、Azure ポータルで Translator リソースを作成し、以下の環境変数を設定します。
