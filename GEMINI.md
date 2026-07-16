@@ -4,7 +4,7 @@
 
 ## 1. プロジェクト概要
 
-これはGo言語で記述されたバッチ型のBotです。OpenReviewから学術論文を自動的に取得し、「今日の論文」を1本選定して、指定されたプラットフォーム（SlackまたはDiscord）に投稿します。常駐サーバを持たず、GitHub Actionsの定期実行によって動作するように設計されています。
+これはGo言語で記述されたバッチ型のBotです。OpenReviewから学術論文（採択論文のみ）を自動的に取得し、「今日の論文」を1本選定して、指定されたプラットフォーム（SlackまたはDiscord）に投稿します。常駐サーバを持たず、GitHub Actionsの定期実行によって動作するように設計されています。
 
 ## 2. 技術スタック
 
@@ -80,11 +80,13 @@ go test -tags=integration ./... -v
 
 ### 5.1. 学会リスト設定 (`assets/venues.json`)
 
-投稿対象としたい学会のリストをJSONファイルで定義します。Botは起動時にこのリストからランダムに1つの学会を選んで処理を実行します。
+投稿対象としたい学会のリストをJSONファイルで定義します。Botは起動時にこのリストからランダムに1つの学会を選んで処理を実行します。デフォルトでは ICLR (2024〜2025) / NeurIPS (2023〜2025) / ICML (2023〜2025) の8会場が登録されています。
 
 - **`name`**: (必須) 通知メッセージで表示される学会の短い名前 (例: "ICLR")。
-- **`venue`**: (必須) OpenReview APIが要求する学会の識別子 (例: "ICLR.cc/2025/Conference")。
+- **`venue`**: (必須) OpenReview APIが要求する学会の識別子 (例: "ICLR.cc/2025/Conference")。採択論文の `content.venueid` フィルタにそのまま使われます。
 - **`year`**: (必須) 表示に使われる年。
+
+論文の取得は「`content.venueid` フィルタで採択論文の件数を取得 → ランダムなoffsetで20件の窓を取得 → その中から1本選定」という2段構えで行われます。これにより不採択論文が混入せず、全採択論文が選定対象になります（窓方式のため厳密な一様選定ではありませんが、実用上ほぼ公平です）。ICLR 2023 以前など旧 API v1 にしかない学会は対象にできません（詳細は `docs/tasks/v2/DPB-016.md` を参照）。
 
 ### 5.2. 環境変数 (`.env` または実行環境で設定)
 
@@ -95,6 +97,8 @@ go test -tags=integration ./... -v
 - **`ABSTRACT_MAX_CHARS`**: (任意) Abstractの最大文字数。デフォルトは `1200`。
 - **`DRY_RUN`**: (任意) `true` の場合、Botは投稿を行いません。
 - **`CUSTOM_USER_AGENT`**: (任意) OpenReview APIへのリクエスト時に使用するUser-Agent。
+- **`OR_EMAIL`**: (任意・推奨) OpenReviewアカウントのメールアドレス。未認証アクセスはネットワークによってはbot対策 (403 ChallengeRequiredError) で弾かれるため、設定を推奨。
+- **`OR_PASSWORD`**: (Secret, `OR_EMAIL` とセットで必須) OpenReviewアカウントのパスワード。
 - **`TRANSLATE_ENABLED`**: (任意) `true` で Azure AI Translator による日本語訳を有効化。デフォルト `false`。
 - **`AZURE_TRANSLATOR_KEY`**: (Secret, `TRANSLATE_ENABLED=true` のとき必須) Translator のサブスクリプションキー。
 - **`AZURE_TRANSLATOR_REGION`**: (Secret, `TRANSLATE_ENABLED=true` のとき必須) Translator リソースのリージョン (例: `japaneast`)。

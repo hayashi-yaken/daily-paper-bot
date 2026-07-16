@@ -5,8 +5,8 @@ GitHub Actionsによる定期実行を想定して設計されています。
 
 ## 主な機能
 
-- 指定したOpenReviewのVenueから論文リストを取得
-- 取得した論文の中からランダムに1本を選定
+- 指定したOpenReviewのVenue（ICLR / NeurIPS / ICML の 2023〜2025 年）から採択論文を取得
+- 全採択論文の中からランダムに1本を選定（件数取得 → ランダムなoffsetで20件の窓を取得する2段構え。厳密な一様選定ではないが、実用上ほぼ公平に全体から選定）
 - 選定した論文の情報を整形してSlackまたはDiscordに投稿
 - (任意) Azure AI Translator を用いた Abstract の日本語訳表示
   - Slack: 親メッセージに訳、原文はスレッド返信
@@ -34,6 +34,9 @@ cd daily-paper-bot
 #### 学会リストの設定
 
 `assets/venues.json` ファイルをエディタで開き、対象としたい学会の情報を編集します。
+デフォルトでは ICLR (2024〜2025) / NeurIPS (2023〜2025) / ICML (2023〜2025) が登録されています。
+
+`venue` フィールドの値は OpenReview API v2 の venueid（例: `ICLR.cc/2024/Conference`）で、採択論文の絞り込みにそのまま使われます。ICLR 2023 以前など旧 API v1 にしかない学会は対象にできません。
 
 #### 環境変数の設定
 
@@ -47,6 +50,8 @@ cp .env.sample .env
 
 - `TARGET_PLATFORM` (`slack` または `discord`)
 - 通知先プラットフォームに応じた認証情報 (`SLACK_BOT_TOKEN`, `DISCORD_WEBHOOK_URL` など)
+
+また、OpenReview API は未認証アクセスがbot対策 (403) で弾かれることがあるため、`OR_EMAIL` / `OR_PASSWORD`(OpenReviewアカウントの認証情報)の設定を推奨します。
 
 #### Azure AI Translator（任意）
 

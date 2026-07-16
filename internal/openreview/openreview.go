@@ -58,14 +58,17 @@ type ValueField[T any] struct {
 	Value T `json:"value"`
 }
 
-// GetNotes は指定されたVenueの論文リストを取得します。
-func (c *Client) GetNotes(venue string) ([]Note, error) {
+// GetAcceptedNotes は指定されたVenueの採択論文をlimit/offset指定で取得します。
+// content.venueidフィルタを使うため、採択済みの論文だけが対象になります。
+// 返り値のcountはフィルタに一致する全体の論文数です（取得した件数ではありません）。
+func (c *Client) GetAcceptedNotes(venue string, limit, offset int) ([]Note, int, error) {
 	// APIエンドポイントを構築
-	endpoint := fmt.Sprintf("%s/notes?invitation=%s/-/Submission", c.BaseURL, url.QueryEscape(venue))
+	endpoint := fmt.Sprintf("%s/notes?content.venueid=%s&limit=%d&offset=%d",
+		c.BaseURL, url.QueryEscape(venue), limit, offset)
 
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, 0, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("User-Agent", c.UserAgent)
 	if c.token != "" {
@@ -74,20 +77,20 @@ func (c *Client) GetNotes(venue string) ([]Note, error) {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
+		return nil, 0, fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, 0, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	var apiResponse APIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
-		return nil, fmt.Errorf("failed to decode response body: %w", err)
+		return nil, 0, fmt.Errorf("failed to decode response body: %w", err)
 	}
 
-	return apiResponse.Notes, nil
+	return apiResponse.Notes, apiResponse.Count, nil
 }
 
 // GetID はPaperインターフェースを満たすためにNoteのIDを返します。
